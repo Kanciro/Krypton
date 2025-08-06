@@ -1,0 +1,40 @@
+name: CI de Python
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest # Ejecuta el workflow en una máquina virtual Linux
+
+    steps:
+    - name: Checkout del código # Paso 1: Obtener el código del repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Python # Paso 2: Configurar el entorno de Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # Puedes especificar la versión de Python que uses (ej. '3.9', '3.11')
+
+    - name: Instalar dependencias # Paso 3: Instalar las librerías del proyecto
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest # Instala las herramientas de linter y pruebas
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+
+    - name: Validar con Linter (Flake8) # Paso 4: Ejecutar el linter para validar el estilo y sintaxis
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+    - name: Correr pruebas unitarias (Pytest) # Paso 5: Ejecutar las pruebas unitarias
+      run: |
+        pytest

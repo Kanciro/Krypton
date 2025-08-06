@@ -62,4 +62,4 @@ readme.md: Este archivo, que proporciona una descripción general del proyecto y
 
 CI
 
-![CI de Python](https://github.com/tu-usuario/tu-repositorio/actions/workflows/main.yml/badge.svg)
+![CI de Python](https://github.com/Kanciro/Krypton/actions/workflows/main.yml/badge.svg)

@@ -56,3 +56,10 @@ requirements.txt: Archivo que lista todas las dependencias de Python del proyect
 readme.md: Este archivo, que proporciona una descripción general del proyecto y su estructura.
 
 .gitkeep: Archivos marcadores que permiten a Git rastrear y mantener carpetas que de otro modo estarían vacías.
+
+---------------------------------------------------------------------------------------
+
+
+CI
+
+![CI de Python](https://github.com/tu-usuario/tu-repositorio/actions/workflows/main.yml/badge.svg)

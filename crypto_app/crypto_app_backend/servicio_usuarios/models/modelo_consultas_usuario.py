@@ -16,7 +16,9 @@ class ConsultasUsuario(Base):
     # foreign key para relacionar con la tabla criptomonedas
     id_cripto = Column(Integer, ForeignKey("criptomonedas.id_cripto"), nullable=False)
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
-    id_moneda_fiat = Column(Integer, ForeignKey("monedas_fiat.id_moneda"), nullable=False)
+    id_moneda_fiat = Column(
+        Integer, ForeignKey("monedas_fiat.id_moneda"), nullable=False
+    )
 
     # Atributos de la tabla
     id_consulta = Column(Integer, primary_key=True, index=True)
@@ -24,5 +26,5 @@ class ConsultasUsuario(Base):
 
     # Relaciones con las tablas Criptomoneda, Usuario y MonedaFiat
     criptomoneda = relationship("Criptomoneda", back_populates="consultas_usuario")
-    usuario = relationship("Usuario", back_populates="consultas_usuario") 
-    moneda_fiat = relationship("MonedaFiat", back_populates="consultas_usuario") 
+    usuario = relationship("Usuario", back_populates="consultas_usuario")
+    moneda_fiat = relationship("MonedaFiat", back_populates="consultas_usuario")

@@ -1,16 +1,17 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
-from datetime import datetime 
+from datetime import datetime
 from sqlalchemy.orm import relationship
 from ..database.db import Base
 
-#importar la clase necesaria para la relacion
+# importar la clase necesaria para la relacion
 from .modelo_criptomonedas import Criptomoneda
+
 
 # la clase ValorHistorico representa la tabla 'valores_historicos' en la base de datos
 class ValorHistorico(Base):
     __tablenamme__ = "valores_historicos"
 
-    #forign key para relacionar con la tabla criptomonedas
+    # forign key para relacionar con la tabla criptomonedas
     id_cripto = Column(Integer, ForeignKey("criptomonedas.id_cripto"), nullable=False)
 
     # atributos de la tabla

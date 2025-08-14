@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas
-from servicio_datos_cripto.services.crypto_sync_service import actualizar_criptomonedas_en_db
+from servicio_datos_cripto.services.crypto_sync_service import (
+    actualizar_criptomonedas_en_db,
+)
+
 app = FastAPI(
     title="Krypton API Gateway",
     description="API Gateway para la aplicación móvil de gestión de criptomonedas.",
@@ -21,10 +24,12 @@ async def leerCripto():
 
     return cryptos
 
+
 @app.get("/api/v1/cryptocurrencies/popular/base_de_datos")
 async def leerCriptoConBD():
 
     from ...servicio_usuarios.database.db import get_db
+
     db = next(get_db())
     cryptos = actualizar_criptomonedas_en_db(db)
 
@@ -34,5 +39,3 @@ async def leerCriptoConBD():
             detail="No se pudieron obtener los datos de las criptomonedas.",
         )
     return cryptos
-
-

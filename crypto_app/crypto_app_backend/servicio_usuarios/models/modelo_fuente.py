@@ -2,7 +2,8 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Date, Boolean, DateTime
 from ..database.db import Base
 
-#la clase fuente representa la tabla 'fuentes' en la base de datos
+
+# la clase fuente representa la tabla 'fuentes' en la base de datos
 class fuente(Base):
     __tablename__ = "fuentes"
 

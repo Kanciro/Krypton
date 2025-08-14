@@ -28,7 +28,7 @@ def actualizar_criptomonedas_en_db(db: Session):
                     nueva_cripto = Criptomoneda(
                         simbolo=cripto_data['symbol'],
                         nombre=cripto_data['name'],
-                        id_api=cripto_data['id']
+                        id_api=cripto_data['id'],
                         fecha_creacion = datetime.utcnow()
                     )
                     db.add(nueva_cripto)

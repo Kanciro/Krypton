@@ -13,6 +13,7 @@ from sqlalchemy import (
 from ..database.db import Base
 from sqlalchemy.orm import relationship
 
+
 class AlertaPersonalizada(Base):
     __tablename__ = "alertas_personalizadas"
     __table_args__ = (

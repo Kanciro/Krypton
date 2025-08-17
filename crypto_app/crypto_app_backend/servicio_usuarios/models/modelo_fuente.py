@@ -5,6 +5,7 @@ from sqlalchemy import Column, Integer, String, Date, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from ..database.db import Base
 
+
 class Fuente(Base):
     # Corrección: Nombre de la tabla en minúsculas
     __tablename__ = "fuentes"

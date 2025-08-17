@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import relationship
 from ..database.db import Base
 
+
 class ValorHistorico(Base):
     __tablename__ = "valores_historicos"
 

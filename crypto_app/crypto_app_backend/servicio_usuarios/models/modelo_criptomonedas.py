@@ -5,6 +5,7 @@ from sqlalchemy import Column, Integer, String, Date, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from ..database.db import Base
 
+
 class Criptomoneda(Base):
     __tablename__ = "criptomonedas"
 
@@ -16,12 +17,13 @@ class Criptomoneda(Base):
 
     # Corrección: Asegura que todos los nombres de back_populates coincidan con las propiedades en otros modelos
     alertas_personalizadas = relationship(
-        "AlertaPersonalizada", 
-        back_populates="criptomoneda" 
+        "AlertaPersonalizada", back_populates="criptomoneda"
     )
     calculadoras_de_divisas = relationship(
         "CalculadoraDeDivisas", back_populates="criptomoneda"
     )
     consultas_usuario = relationship("ConsultasUsuario", back_populates="criptomoneda")
-    noticias = relationship("Noticia", back_populates="cripto") # El nombre de la propiedad en Noticia es "cripto"
+    noticias = relationship(
+        "Noticia", back_populates="cripto"
+    )  # El nombre de la propiedad en Noticia es "cripto"
     valores_historicos = relationship("ValorHistorico", back_populates="criptomoneda")

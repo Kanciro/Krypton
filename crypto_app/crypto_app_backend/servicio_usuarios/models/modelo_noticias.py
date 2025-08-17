@@ -6,15 +6,18 @@ from sqlalchemy.orm import relationship
 from ..database.db import Base
 
 # Corrección: Elimina las importaciones de los modelos para evitar circularidad.
-#from .modelo_fuente import Fuente
-#from .modelo_categoria_noticias import CategoriaNoticias
+# from .modelo_fuente import Fuente
+# from .modelo_categoria_noticias import CategoriaNoticias
+
 
 class Noticia(Base):
     __tablename__ = "noticias"
 
     id_cripto = Column(Integer, ForeignKey("criptomonedas.id_cripto"), nullable=True)
     id_fuente = Column(Integer, ForeignKey("fuentes.id_fuente"), nullable=False)
-    id_categoria = Column(Integer, ForeignKey("categorias_noticias.id_categoria"), nullable=False)
+    id_categoria = Column(
+        Integer, ForeignKey("categorias_noticias.id_categoria"), nullable=False
+    )
 
     id_noticia = Column(Integer, primary_key=True, index=True)
     api_id = Column(String(50), nullable=False)

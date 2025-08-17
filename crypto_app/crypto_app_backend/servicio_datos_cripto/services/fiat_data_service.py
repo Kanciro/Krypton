@@ -1,9 +1,10 @@
 import requests
 
+
 def traerTopMonedasFiat():
     try:
         url = "https://api.coingecko.com/api/v3/simple/price"
-        
+
         # Diccionario para mapear los símbolos de las monedas fiat a sus nombres
         fiat_names = {
             "usd": "Dólar estadounidense",
@@ -22,10 +23,10 @@ def traerTopMonedasFiat():
             "hkd": "Dólar de Hong Kong",
             "nzd": "Dólar neozelandés",
             "sek": "Corona sueca",
-            "nok": "Corona noruega", 
+            "nok": "Corona noruega",
             "dkk": "Corona danesa",
             "zar": "Rand sudafricano",
-            "try": "Lira turca", 
+            "try": "Lira turca",
             "krw": "Won surcoreano",
             "idr": "Rupia indonesia",
             "pln": "Zloty polaco",
@@ -45,26 +46,24 @@ def traerTopMonedasFiat():
             "omr": "Rial omaní",
             "pkr": "Rupia pakistaní",
             "bdt": "Taka de Bangladesh",
-            "npr": "Rupia nepalí"
+            "npr": "Rupia nepalí",
         }
 
         vs_currencies_str = ",".join(fiat_names.keys())
 
-        params = {
-            "ids": "bitcoin,ethereum",
-            "vs_currencies": vs_currencies_str
-        }
+        params = {"ids": "bitcoin,ethereum", "vs_currencies": vs_currencies_str}
 
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         # Devuelve tanto los datos de precios como el diccionario de nombres
         return data, fiat_names
 
     except requests.exceptions.RequestException as e:
         print(f"Error al conectar con la API de CoinGecko: {e}")
         return None, None
+
 
 if __name__ == "__main__":
     print("Obteniendo precios de criptomonedas en múltiples monedas fiat...")
@@ -75,6 +74,8 @@ if __name__ == "__main__":
             print(f"\nCriptomoneda: {crypto.capitalize()}")
             for fiat_symbol, precio in valor.items():
                 fiat_name = fiat_names.get(fiat_symbol, "Nombre Desconocido")
-                print(f"  Símbolo: {fiat_symbol.upper()}, Nombre: {fiat_name}, Precio: {precio}")
+                print(
+                    f"  Símbolo: {fiat_symbol.upper()}, Nombre: {fiat_name}, Precio: {precio}"
+                )
     else:
         print("No se pudieron obtener los precios.")

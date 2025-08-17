@@ -1,12 +1,16 @@
 from fastapi import FastAPI, HTTPException, Depends
 from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas
-from servicio_datos_cripto.services.crypto_sync_service import (actualizar_criptomonedas_en_db)
+from servicio_datos_cripto.services.crypto_sync_service import (
+    actualizar_criptomonedas_en_db,
+)
 from servicio_datos_cripto.services.fiat_data_service import traerTopMonedasFiat
 from servicio_usuarios.services.user_data_services import RegistrarUsuario
-from servicio_usuarios.schemas.schema_users import UsuarioCrear, UsuarioBase as UsuarioSchema
+from servicio_usuarios.schemas.schema_users import (
+    UsuarioCrear,
+    UsuarioBase as UsuarioSchema,
+)
 from sqlalchemy.orm import Session
 from servicio_usuarios.database.db import get_db
-
 
 
 app = FastAPI(
@@ -45,6 +49,7 @@ async def leerCriptoConBD():
         )
     return cryptos
 
+
 @app.get("/api/v1/cryptocurrencies/popular/monedas_fiat/popular")
 async def leerMonedasFiat():
 
@@ -72,7 +77,7 @@ async def leerMonedasFiatConBD():
             status_code=500,
             detail="No se pudieron obtener los datos de las monedas fiat.",
         )
-    
+
     return fiats
 
 

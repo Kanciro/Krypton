@@ -1,0 +1,18 @@
+# __init__.py
+
+from sqlalchemy.orm import registry
+
+import servicio_usuarios.models.modelo_alertas_personalizadas
+import servicio_usuarios.models.modelo_calculadora_de_divisas
+import servicio_usuarios.models.modelo_categoria_noticias
+import servicio_usuarios.models.modelo_consultas_usuario
+import servicio_usuarios.models.modelo_criptomonedas
+import servicio_usuarios.models.modelo_fuente
+import servicio_usuarios.models.modelo_noticias
+import servicio_usuarios.models.modelo_moneda_fiat
+import servicio_usuarios.models.modelo_usuario
+import servicio_usuarios.models.modelo_valor_fiat
+import servicio_usuarios.models.modelo_valor_historico
+
+mapper_registry = registry()
+mapper_registry.configure()

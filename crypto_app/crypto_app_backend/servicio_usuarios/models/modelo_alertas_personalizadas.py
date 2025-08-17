@@ -1,3 +1,5 @@
+# modelo_alertas.py
+
 from datetime import datetime
 from sqlalchemy import (
     Column,
@@ -11,11 +13,6 @@ from sqlalchemy import (
 from ..database.db import Base
 from sqlalchemy.orm import relationship
 
-# importar las clases necesarias para la relación
-from .modelo_criptomonedas import Criptomoneda
-from .modelo_usuario import Usuario
-
-
 class AlertaPersonalizada(Base):
     __tablename__ = "alertas_personalizadas"
     __table_args__ = (
@@ -26,21 +23,18 @@ class AlertaPersonalizada(Base):
         ),
     )
 
-    # foreign key para relacionar con las tablas necesarias
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
     id_cripto = Column(Integer, ForeignKey("criptomonedas.id_cripto"), nullable=False)
 
-    # Atributos de la tabla
     id_alerta = Column(Integer, primary_key=True, index=True)
-    precio_objetivo = Column(Integer, nullable=False)
-    porcentaje_cambio_objetivo = Column(Integer, nullable=False)
-    tipo_alerta = Column(
-        String(50), nullable=False
-    )  # Ejemplo: "precio", "porcentaje_cambio"
-    estado = Column(Boolean, default=True)  # Estado de la alerta (activa/inactiva)
+    # Corrección: Las columnas deben ser anulables para la lógica del CheckConstraint
+    precio_objetivo = Column(Integer, nullable=True)
+    porcentaje_cambio_objetivo = Column(Integer, nullable=True)
+    tipo_alerta = Column(String(50), nullable=False)
+    estado = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     ultima_activacion = Column(DateTime, nullable=True)
 
-    # Relaciones con las tablas Criptomoneda y Usuario
+    # Las relaciones están bien definidas
     criptomoneda = relationship("Criptomoneda", back_populates="alertas_personalizadas")
     usuario = relationship("Usuario", back_populates="alertas_personalizadas")

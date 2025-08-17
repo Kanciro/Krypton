@@ -3,13 +3,14 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
 
-# Cargar las variables de entorno del archivo .env
+# Cargar las variables de entorno desde el archivo .env
+# que ahora está en la raíz de tu backend
 load_dotenv()
 
-# Obtener la URL de la base de datos desde las variables de entorno
+# Obtener la URL de la base de datos
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Verificar si la URL existe para evitar errores
+# Verificar si la URL existe
 if not DATABASE_URL:
     raise ValueError("No se encontró la variable de entorno DATABASE_URL.")
 

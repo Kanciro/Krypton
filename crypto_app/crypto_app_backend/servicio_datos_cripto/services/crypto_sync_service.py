@@ -1,8 +1,10 @@
     # servicio_datos_cripto/services/crypto_sync_service.py
 from sqlalchemy.orm import Session
 from .crypto_data_service import traerTopCriptomonedas
-from servicio_usuarios.models.modelo_criptomonedas import Criptomoneda # Asegúrate de que esta sea la ruta correcta
+from servicio_usuarios.models.modelo_criptomonedas import Criptomoneda 
 from datetime import datetime
+
+
 def actualizar_criptomonedas_en_db(db: Session):
 
         #Obtiene las criptomonedas populares de la API y actualiza la tabla
@@ -23,6 +25,7 @@ def actualizar_criptomonedas_en_db(db: Session):
                     # Si existe, actualizamos sus datos
                     cripto_existente.nombre = cripto_data['name']
                     cripto_existente.simbolo = cripto_data['symbol']
+                    cripto_existente.id_api = cripto_data['id']
                 else:
                     # Si no existe, creamos un nuevo registro en la base de datos
                     nueva_cripto = Criptomoneda(
@@ -35,7 +38,12 @@ def actualizar_criptomonedas_en_db(db: Session):
 
             db.commit()
             print("Base de datos de criptomonedas actualizada exitosamente.")
-            
+
+            return {"mensaje": "Base de datos de criptomonedas actualizada exitosamente."} 
     except Exception as e:
             db.rollback()
             print(f"Error al actualizar la base de datos: {e}")
+            return None
+
+
+

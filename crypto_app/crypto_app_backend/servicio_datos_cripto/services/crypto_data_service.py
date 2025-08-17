@@ -9,7 +9,7 @@ def traerTopCriptomonedas():
         params = {
             "vs_currency": "usd",
             "order": "market_cap_desc",
-            "per_page": 10,
+            "per_page": 20,
             "page": 1,
         }
 

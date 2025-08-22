@@ -17,7 +17,7 @@ class ValorFiat(Base):
         Integer, ForeignKey("moneda_fiat.id_moneda"), nullable=False
     )
     id_valor_historico = Column(
-        Integer, ForeignKey("valores_historicos.id_valor_historico"), nullable=False
+        Integer, ForeignKey("valor_historico.id_valor_historico"), nullable=False
     )
 
     id_valor_fiat = Column(Integer, primary_key=True, index=True)

@@ -16,7 +16,6 @@ class Usuario(Base):
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     ultimo_inicio_sesion = Column(DateTime, default=datetime.utcnow)
 
-    # Corrección: Se agrega la relación con ConsultasUsuario
     alertas_personalizadas = relationship(
         "AlertaPersonalizada", back_populates="usuario"
     )

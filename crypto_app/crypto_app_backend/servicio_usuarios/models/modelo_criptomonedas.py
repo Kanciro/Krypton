@@ -26,4 +26,4 @@ class Criptomoneda(Base):
     noticias = relationship(
         "Noticia", back_populates="cripto"
     )  # El nombre de la propiedad en Noticia es "cripto"
-    valores_historicos = relationship("ValorHistorico", back_populates="criptomoneda")
+    valor_historico = relationship("ValorHistorico", back_populates="criptomoneda")

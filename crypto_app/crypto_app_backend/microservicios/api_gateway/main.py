@@ -4,12 +4,12 @@ from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconn
 from typing import List
 import asyncio
 import logging
+import json
 
 # Tus imports existentes
 from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas
-from servicio_datos_cripto.services.crypto_sync_service import (
-    actualizar_criptomonedas_en_db,
-)
+# Importa la función actualizada
+from servicio_datos_cripto.services.crypto_sync_service import actualizar_criptomonedas_en_db
 from servicio_datos_cripto.services.fiat_data_service import traerTopMonedasFiat
 from servicio_usuarios.services.user_data_services import RegistrarUsuario
 from servicio_usuarios.schemas.schema_users import (
@@ -27,9 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Gestor de conexiones para WebSockets
 class ConnectionManager:
-
     #Clase para gestionar las conexiones de clientes por WebSocket.
-
     def __init__(self):
         self.active_connections: List[WebSocket] = []
 
@@ -79,13 +77,21 @@ async def leerCripto():
 
 @app.get("/api/v1/cryptocurrencies/popular/base_de_datos")
 async def leerCriptoConBD(db: Session = Depends(get_db)):
-    cryptos = actualizar_criptomonedas_en_db(db)
-    if cryptos is None:
+    # Este endpoint ya no es necesario si la actualización se hace por WebSocket,
+    # pero lo dejamos para no romper tu código.
+    criptos_api = traerTopCriptomonedas()
+    if criptos_api is None:
         raise HTTPException(
             status_code=500,
             detail="No se pudieron obtener los datos de las criptomonedas.",
         )
-    return cryptos
+    result = actualizar_criptomonedas_en_db(db, criptos_api)
+    if result is None:
+        raise HTTPException(
+            status_code=500,
+            detail="No se pudieron obtener los datos de las criptomonedas.",
+        )
+    return result
 
 
 @app.get("/api/v1/cryptocurrencies/popular/monedas_fiat/popular")
@@ -133,9 +139,8 @@ def Login(credenciales: LoginSchema, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
-
 @app.get("/api/v1/cryptocurrencies/history/{crypto_id_api}")
-def LeerValorHistorico( crypto_id: str, days: int):
+def LeerValorHistorico(crypto_id: str, days: int):
 
     from servicio_datos_cripto.services.historical_crypto_data_services import LeerValorHistorico
     result = LeerValorHistorico(crypto_id, days)
@@ -151,30 +156,32 @@ def CargarHistoricoDesdeDb(crypto_id: str, days: int, db: Session = Depends(get_
         raise HTTPException(status_code=500, detail="Error al cargar los datos históricos desde la base de datos.")
     return result
 
-# --- ¡Nuevo! Agregamos el endpoint de WebSocket al final del archivo ---
+# --- Endpoint de WebSocket actualizado para sincronizar la BD ---
 @app.websocket("/ws/cryptocurrencies")
-async def websocket_endpoint(websocket: WebSocket):
-
-    # Endpoint de WebSocket para transmitir precios de criptomonedas en tiempo real.
+async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):
 
     await manager.connect(websocket)
     try:
         while True:
-            # Aquí obtenemos los datos de tus servicios existentes
-            # Implementar reintentos y manejo de errores para evitar el 403
             retries = 3
+            crypto_prices = None
             for i in range(retries):
                 crypto_prices = traerTopCriptomonedas()
                 if crypto_prices:
-                    await manager.broadcast(str(crypto_prices))
-                    break 
+                    break
                 else:
                     logger.warning(f"Intento {i+1} de {retries} fallido. Esperando antes de reintentar...")
-
                     await asyncio.sleep(2 ** i)
 
             if not crypto_prices:
                 logger.error("No se pudieron obtener los datos después de varios intentos. Deteniendo la transmisión.")
+            else:
+                # Sincronizar la base de datos con los datos recibidos
+                actualizar_criptomonedas_en_db(db, crypto_prices)
+
+                # Transmitir los datos a todos los clientes WebSocket conectados
+                # Usamos json.dumps para enviar un string JSON válido al frontend
+                await manager.broadcast(json.dumps(crypto_prices))
 
             await asyncio.sleep(3)
 

@@ -8,6 +8,7 @@ class UsuarioBase(BaseModel):
     nombre: str
     correo: EmailStr
     fecha_nacimiento: date
+    ultimo_inicio_sesion: Optional[datetime] = None
 
     # Valida que los campos no estén vacíos
     @validator('nombre', 'correo', 'fecha_nacimiento', pre=True)

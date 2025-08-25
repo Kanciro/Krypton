@@ -27,3 +27,5 @@ env/
 *.tmp
 dist/
 build/
+
+pytest.ini

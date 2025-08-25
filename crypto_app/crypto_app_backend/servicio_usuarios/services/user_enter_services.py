@@ -22,11 +22,12 @@ def LoginUsuarioSeguro(db: Session, credenciales: LoginSchema):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
    
-    if not pwd_context.verify(credenciales.contraseña, usuario_encontrado.contraseña):  # type: ignore
+    if not pwd_context.verify(credenciales.contraseña, usuario_encontrado.contraseña):   # type: ignore
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     
     
-    usuario_encontrado.ultimo_inicio_sesion = datetime.utcnow()  # type: ignore
+    usuario_encontrado.ultimo_inicio_sesion = datetime.utcnow() # type: ignore
+    db.commit()
     db.refresh(usuario_encontrado)
 
     return UsuarioSchema.model_validate(usuario_encontrado)

@@ -5,7 +5,7 @@ from typing import List
 import asyncio
 import logging
 import json
-
+from fastapi.middleware.cors import CORSMiddleware
 # Tus imports existentes
 from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas
 # Importa la función actualizada
@@ -62,6 +62,23 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+
+origins = [
+    "http://localhost",
+    "http://localhost:3000", 
+    "http://localhost:8080",
+    "http://localhost:8000",
+    "http://localhost:8081"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
 
 # Tus endpoints existentes (con pequeñas mejoras de logging y manejo de excepciones)
 @app.get("/api/v1/cryptocurrencies/popular")

@@ -17,10 +17,6 @@ env/
 *.sqlite
 *.sqlite3
 
-# Environment variables
-.env
-.flaskenv
-
 # Other cache and temporary files
 .pytest_cache/
 *.log

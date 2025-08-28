@@ -1,21 +1,53 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+  import React, { useState } from 'react';
+  import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+  import { LinearGradient } from 'expo-linear-gradient';
 
-// Aquí iría la lógica para enviar los datos al backend
-const LoginScreen = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [date, setDate] = useState('');
 
-  const handleLogin = () => {
-    console.log('Username:', username);
-    console.log('Password:', password);
-    console.log('Email:', email);
-    console.log('Date:', date);
-  };
-//  Seccion fundamental del registro
+  
+  // Lógica para enviar los datos de registro al backend
+  const LoginScreen = () => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('');
+    const [date, setDate] = useState('');
+
+    // Función para manejar el proceso de registro
+    const handleRegistration = async () => {
+      // Objeto con los datos que se enviarán al backend
+    const userData = {
+    nombre: username,
+    contraseña: password,
+    correo: email,
+    fecha_nacimiento: date,
+    };
+
+      try {
+        const response = await fetch('http://127.0.0.1:8000/users/registrar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        });
+
+        // Si la respuesta no es exitosa, lanza un error
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Error en el registro');
+        }
+
+        // Si la respuesta es exitosa, analiza el JSON y muestra un mensaje
+        const responseData = await response.json();
+        console.log('¡Registro exitoso!', responseData);
+        // Aquí puedes agregar la lógica para navegar a otra pantalla
+        // o mostrar un mensaje de éxito al usuario.
+        
+      } catch (error) {
+        // Manejo de errores
+        console.error('Hubo un error al registrar el usuario:', error.message); // typeof error is Error
+        // Puedes mostrar un mensaje de error en la UI aquí.
+      }
+    };
 
   return (
     <LinearGradient
@@ -61,13 +93,14 @@ const LoginScreen = () => {
 
         {/* Los checkboxes para aceptar términos y notificaciones irían aquí */}
         
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <TouchableOpacity style={styles.button} onPress={handleRegistration}>
           <Text style={styles.buttonText}>Acceder</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>
   );
 };
+
 
 // Seccion de Styles
 

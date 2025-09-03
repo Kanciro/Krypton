@@ -1,21 +1,26 @@
 # main.py
 
-from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query, Path
 from typing import List
 import asyncio
 import logging
 import json
-
+from fastapi.middleware.cors import CORSMiddleware
 # Tus imports existentes
 from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas
+from servicio_datos_cripto.services.crypto_data_id_service import ObtenerValorPorSimbolo
 # Importa la función actualizada
 from servicio_datos_cripto.services.crypto_sync_service import actualizar_criptomonedas_en_db
 from servicio_datos_cripto.services.fiat_data_service import traerTopMonedasFiat
 from servicio_usuarios.services.user_data_services import RegistrarUsuario
 from servicio_usuarios.schemas.schema_users import (
     UsuarioCrear,
-    UsuarioBase as UsuarioSchema,
+    UsuarioBase as UsuarioSchema, 
+    UsuarioActualizar
 )
+from servicio_usuarios.schemas.schema_valor_historico import ValorHistoricoSchema
+from servicio_usuarios.models.modelo_usuario import Usuario
+from servicio_usuarios.services.user_update_data_services import ActualizarUsuario
 from sqlalchemy.orm import Session
 from servicio_usuarios.schemas.schema_usuario_login import LoginSchema
 from servicio_usuarios.database.db import get_db
@@ -55,7 +60,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Tu aplicación FastAPI
 app = FastAPI(
     title="Krypton API Gateway",
     description="API Gateway para la aplicación móvil de gestión de criptomonedas.",
@@ -63,7 +67,24 @@ app = FastAPI(
 )
 
 
-# Tus endpoints existentes (con pequeñas mejoras de logging y manejo de excepciones)
+
+origins = [
+    "http://localhost",
+    "http://localhost:3000", 
+    "http://localhost:8080",
+    "http://localhost:8000",
+    "http://localhost:8081"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
+
+
 @app.get("/api/v1/cryptocurrencies/popular")
 async def leerCripto():
     cryptos = traerTopCriptomonedas()
@@ -75,10 +96,10 @@ async def leerCripto():
     return cryptos
 
 
+
+"""
 @app.get("/api/v1/cryptocurrencies/popular/base_de_datos")
 async def leerCriptoConBD(db: Session = Depends(get_db)):
-    # Este endpoint ya no es necesario si la actualización se hace por WebSocket,
-    # pero lo dejamos para no romper tu código.
     criptos_api = traerTopCriptomonedas()
     if criptos_api is None:
         raise HTTPException(
@@ -91,7 +112,25 @@ async def leerCriptoConBD(db: Session = Depends(get_db)):
             status_code=500,
             detail="No se pudieron obtener los datos de las criptomonedas.",
         )
-    return result
+    return result 
+"""
+
+@app.get(
+    "/api/v1/cryptocurrencies/history/by_symbol/{simbolo_cripto}",
+    response_model=List[ValorHistoricoSchema],
+    status_code=200
+)
+async def leer_historico_por_simbolo(
+    simbolo_cripto: str = Path(..., description="Símbolo de la criptomoneda (ej. 'BTC', 'ETH')", example="BTC"),
+    dias: int = Query(30, ge=1, description="Número de días hacia atrás a filtrar", example=30),
+    db: Session = Depends(get_db)
+):
+    valores_historicos = ObtenerValorPorSimbolo(db, simbolo_cripto, dias)
+
+    if valores_historicos is None:
+        raise HTTPException(status_code=404, detail="Criptomoneda no encontrada.")
+
+    return valores_historicos
 
 
 @app.get("/api/v1/cryptocurrencies/popular/monedas_fiat/popular")
@@ -125,9 +164,43 @@ def CrearUsuario(user_data: UsuarioCrear, db: Session = Depends(get_db)):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+# Nuevo endpoint para actualizar usuario por ID
+@app.put("/users/actualizar/{user_id}", response_model=UsuarioSchema, status_code=200)
+def actualizar_usuario_endpoint(
+    user_id: int = Path(..., description="ID del usuario a actualizar", gt=0),
+    user_data: UsuarioActualizar = ...,
+    db: Session = Depends(get_db)
+):
+    try:
+        updated_user = ActualizarUsuario(db=db, usuario_id=user_id, datos_usuario=user_data)
+        return updated_user
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
+# Nuevo endpoint para actualizar usuario por correo
+@app.put("/users/actualizar/by-email/{email}", response_model=UsuarioSchema, status_code=200)
+def actualizar_usuario_por_correo_endpoint(
+    email: str = Path(..., description="Correo del usuario a actualizar"),
+    user_data: UsuarioActualizar = ...,
+    db: Session = Depends(get_db)
+):
+    try:
+        usuario_encontrado = db.query(Usuario).filter(Usuario.correo == email).first()
+        
+        if not usuario_encontrado:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        updated_user = ActualizarUsuario(db=db, usuario_id=usuario_encontrado.id_usuario, datos_usuario=user_data)
+        return updated_user
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.post("/login", response_model=UsuarioSchema)
+@app.post("/users/login", response_model=UsuarioSchema)
 def Login(credenciales: LoginSchema, db: Session = Depends(get_db)):
     from servicio_usuarios.services.user_enter_services import LoginUsuarioSeguro
     try:
@@ -137,8 +210,10 @@ def Login(credenciales: LoginSchema, db: Session = Depends(get_db)):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
 
 
+"""
 @app.get("/api/v1/cryptocurrencies/history/{crypto_id_api}")
 def LeerValorHistorico(crypto_id: str, days: int):
 
@@ -147,7 +222,9 @@ def LeerValorHistorico(crypto_id: str, days: int):
     if result is None:
         raise HTTPException(status_code=500, detail="Error al cargar los datos históricos.")
     return result
+"""
 
+"""
 @app.get("/api/v1/cryptocurrencies/history/{crypto_id_api}/db")
 def CargarHistoricoDesdeDb(crypto_id: str, days: int, db: Session = Depends(get_db)):
     from servicio_datos_cripto.services.historical_crypto_sync_services import ActualizarValorHistoricoConDb
@@ -155,8 +232,8 @@ def CargarHistoricoDesdeDb(crypto_id: str, days: int, db: Session = Depends(get_
     if result is None:
         raise HTTPException(status_code=500, detail="Error al cargar los datos históricos desde la base de datos.")
     return result
+"""
 
-# --- Endpoint de WebSocket actualizado para sincronizar la BD ---
 @app.websocket("/ws/cryptocurrencies")
 async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):
 
@@ -176,11 +253,9 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
             if not crypto_prices:
                 logger.error("No se pudieron obtener los datos después de varios intentos. Deteniendo la transmisión.")
             else:
-                # Sincronizar la base de datos con los datos recibidos
+
                 actualizar_criptomonedas_en_db(db, crypto_prices)
 
-                # Transmitir los datos a todos los clientes WebSocket conectados
-                # Usamos json.dumps para enviar un string JSON válido al frontend
                 await manager.broadcast(json.dumps(crypto_prices))
 
             await asyncio.sleep(3)

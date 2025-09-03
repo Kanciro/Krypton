@@ -47,3 +47,11 @@ class UsuarioSchema(UsuarioBase):
 
     class Config:
         from_attributes = True
+
+
+# Esquema para actualizar un usuario (todos los campos opcionales)
+class UsuarioActualizar(BaseModel):
+    nombre: Optional[str] = None
+    correo: Optional[EmailStr] = None
+    fecha_nacimiento: Optional[date] = None
+    contraseña: Optional[str] = None

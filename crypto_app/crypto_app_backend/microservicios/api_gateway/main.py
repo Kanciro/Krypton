@@ -85,6 +85,7 @@ app.add_middleware(
 )
 
 
+
 @app.get("/api/v1/cryptocurrencies/popular")
 async def leerCripto():
     cryptos = traerTopCriptomonedas()

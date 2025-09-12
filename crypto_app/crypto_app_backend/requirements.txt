@@ -29,6 +29,7 @@ passlib==1.7.4
 pathspec==0.12.1
 platformdirs==4.3.8
 pluggy==1.6.0
+psycopg2==2.9.10
 pycodestyle==2.14.0
 pydantic==2.11.7
 pydantic_core==2.33.2
@@ -51,3 +52,4 @@ uvicorn==0.35.0
 watchfiles==1.1.0
 websockets==15.0.1
 Werkzeug==3.1.3
+

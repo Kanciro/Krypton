@@ -16,7 +16,7 @@ def ObtenerValorPorSimbolo(
     # 1. Encontrar la criptomoneda por su símbolo
     cripto = db.query(Criptomoneda).filter(Criptomoneda.simbolo == simbolo_cripto).first()
     if not cripto:
-        return None # Devuelve None si la criptomoneda no se encuentra
+        return [] # Devuelve una lista vacía si la criptomoneda no se encuentra
 
     # 2. Calcular la fecha de inicio para el filtro
     fecha_limite = datetime.utcnow() - timedelta(days=dias)

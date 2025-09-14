@@ -15,6 +15,10 @@ class Usuario(Base):
     notificaciones = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     ultimo_inicio_sesion = Column(DateTime, default=datetime.utcnow)
+    codigo_verificacion = Column(String(10), nullable=True)
+    is_active = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+
 
     alertas_personalizadas = relationship(
         "AlertaPersonalizada", back_populates="usuario"

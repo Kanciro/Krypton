@@ -13,6 +13,8 @@ import servicio_usuarios.models.modelo_moneda_fiat
 import servicio_usuarios.models.modelo_usuario
 import servicio_usuarios.models.modelo_valor_fiat
 import servicio_usuarios.models.modelo_valor_historico
+import servicio_usuarios.models.modelo_invitados
+import servicio_usuarios.models.modelo_interacciones_invitados
 
 mapper_registry = registry()
 mapper_registry.configure()

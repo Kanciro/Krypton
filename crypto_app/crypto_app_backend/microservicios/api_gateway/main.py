@@ -1,6 +1,6 @@
 # main.py
 
-from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query, Path
+from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query, Path, Request
 from typing import List
 import asyncio
 import logging
@@ -18,12 +18,28 @@ from servicio_usuarios.schemas.schema_users import (
     UsuarioBase as UsuarioSchema, 
     UsuarioActualizar
 )
+from jose import jwt, JWTError
+from datetime import datetime
+from servicio_usuarios.services.auth.auth_utils import get_current_user
+from servicio_usuarios.services.email_services.email_sender import send_verification_email, send_registration_email
+from servicio_usuarios.schemas.schema_guest import InvitadoResponse
+import random
+import string
 from servicio_usuarios.schemas.schema_valor_historico import ValorHistoricoSchema
 from servicio_usuarios.models.modelo_usuario import Usuario
 from servicio_usuarios.services.user_update_data_services import ActualizarUsuario
+from servicio_usuarios.services.user_delete_services import DesactivarUsuario, ReactivarUsuario
+from servicio_usuarios.services.guest_services import crear_sesion_invitado, registrar_interaccion_invitado, actualizar_estado_sesiones_inactivas
+from servicio_usuarios.schemas.schema_guest import InvitadoResponse, InteraccionInvitadoRequest
 from sqlalchemy.orm import Session
 from servicio_usuarios.schemas.schema_usuario_login import LoginSchema
 from servicio_usuarios.database.db import get_db
+from servicio_usuarios.schemas.schema_correo_update import CorreoActualizarSchema, CorreoVerificarSchema
+from servicio_usuarios.services.auth.auth_utils import get_current_user
+from servicio_usuarios.services.auth.auth_utils import create_access_token, get_current_user
+from servicio_usuarios.schemas.schema_usuario_login import TokenSchema
+from servicio_usuarios.services.user_enter_services import LoginUsuarioSeguro
+from servicio_usuarios.services.auth.auth_utils import SECRET_KEY, ALGORITHM
 
 # Configuración básica de logging
 logging.basicConfig(level=logging.INFO)
@@ -155,58 +171,201 @@ async def leerMonedasFiatConBD(db: Session = Depends(get_db)):
         )
     return fiats
 
+"""@app.get("/api/v1/cryptocurrencies/popular/valores_fiat")
+async def leerValoresFiat():
+    from servicio_datos_cripto.services.valor_fiat_data_service import traerValoresCripto
+    precios = traerValoresCripto()
+    if precios is None:
+        raise HTTPException(
+            status_code=500,
+            detail="No se pudieron obtener los datos de los valores fiat.",
+        )
+    return precios"""
 
-@app.post("/users/registrar", response_model=UsuarioSchema, status_code=201)
+
+@app.post("/users/registrar", status_code=201)
 def CrearUsuario(user_data: UsuarioCrear, db: Session = Depends(get_db)):
     try:
-        new_user = RegistrarUsuario(db=db, datos_usuario=user_data)
-        return new_user
+        response = RegistrarUsuario(db=db, datos_usuario=user_data)
+        return response
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-# Nuevo endpoint para actualizar usuario por ID
-@app.put("/users/actualizar/{user_id}", response_model=UsuarioSchema, status_code=200)
+@app.post("/users/verify", status_code=200)
+def verificar_correo(token: str, db: Session = Depends(get_db)):
+
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Token inválido o expirado",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub") # type: ignore
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+   
+    usuario = db.query(Usuario).filter(Usuario.id_usuario == int(user_id)).first()
+    
+    
+    if not usuario or usuario.is_verified is True:
+        raise HTTPException(status_code=400, detail="El correo ya ha sido verificado o el usuario no existe.")
+
+    usuario.is_verified = True  # type: ignore
+    usuario.is_active = True  # type: ignore
+    db.commit()
+    db.refresh(usuario)
+    
+    return {"mensaje": "¡Correo verificado con éxito! Ya puedes iniciar sesión."}
+    
+
+@app.put("/users/actualizar", response_model=UsuarioSchema, status_code=200)
 def actualizar_usuario_endpoint(
-    user_id: int = Path(..., description="ID del usuario a actualizar", gt=0),
-    user_data: UsuarioActualizar = ...,
-    db: Session = Depends(get_db)
+    user_data: UsuarioActualizar, 
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user) 
 ):
     try:
-        updated_user = ActualizarUsuario(db=db, usuario_id=user_id, datos_usuario=user_data)
+        updated_user = ActualizarUsuario(db=db, usuario_id=getattr(current_user, "id_usuario"), datos_usuario=user_data)
         return updated_user
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-# Nuevo endpoint para actualizar usuario por correo
-@app.put("/users/actualizar/by-email/{email}", response_model=UsuarioSchema, status_code=200)
-def actualizar_usuario_por_correo_endpoint(
-    email: str = Path(..., description="Correo del usuario a actualizar"),
-    user_data: UsuarioActualizar = ...,
+@app.put("/users/verify-update-email", status_code=200)
+def verify_update_email(
+    datos_verificacion: CorreoVerificarSchema,
+    db: Session = Depends(get_db)
+):
+
+    usuario = db.query(Usuario).filter(
+        Usuario.codigo_verificacion == datos_verificacion.codigo
+    ).first()
+
+    if not usuario:
+        raise HTTPException(status_code=400, detail="Código de verificación inválido.")
+  
+    usuario.correo = datos_verificacion.nuevo_correo # type: ignore
+    usuario.codigo_verificacion = None   # type: ignore
+    db.commit()
+
+    return {"mensaje": "Correo electrónico actualizado con éxito."}
+
+@app.put("/users/request-update-email", status_code=200)
+def request_update_email(
+    
+    correo_data: CorreoActualizarSchema,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+
+
+    existing_user = db.query(Usuario).filter(Usuario.correo == correo_data.nuevo_correo).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="El correo ya está registrado en otra cuenta.")
+
+    verification_code = ''.join(random.choices(string.digits, k=6))
+
+    current_user.codigo_verificacion = verification_code # type: ignore
+    db.commit()
+
+
+    email_sent = send_verification_email(correo_data.nuevo_correo, verification_code)
+
+    if not email_sent:
+    # Si falla el envío del correo, puedes revertir la base de datos y lanzar una excepción
+        db.rollback()
+        raise HTTPException(status_code=500, detail="No se pudo enviar el correo de verificación. Inténtalo de nuevo.")
+
+    return {"mensaje": "Correo de verificación enviado. Revisa tu bandeja de entrada."}
+
+@app.delete("/users/desactivar", status_code=200)
+def desactivar_usuario_endpoint(
+    credenciales: LoginSchema,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    if current_user.nombre != credenciales.nombre: # type: ignore
+        raise HTTPException(status_code=403, detail="No tienes permiso para realizar esta acción")
+
+    try:
+        DesactivarUsuario(db=db, credenciales=credenciales)
+        return {"mensaje": "Cuenta desactivada con éxito."}
+    except HTTPException as e:
+        raise e
+    
+@app.post("/users/reactivar", status_code=200)
+def reactivar_usuario_endpoint(
+    credenciales: LoginSchema,
+    db: Session = Depends(get_db)
+):
+
+    try:
+        ReactivarUsuario(db=db, credenciales=credenciales)
+        return {"mensaje": "Cuenta reactivada con éxito. Ya puedes iniciar sesión."}
+    except HTTPException as e:
+        raise e
+    
+
+@app.post("/guests/login", response_model=InvitadoResponse, status_code=201)
+def crear_sesion_invitado_endpoint(
+    request: Request,
     db: Session = Depends(get_db)
 ):
     try:
-        usuario_encontrado = db.query(Usuario).filter(Usuario.correo == email).first()
-        
-        if not usuario_encontrado:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
-        updated_user = ActualizarUsuario(db=db, usuario_id=usuario_encontrado.id_usuario, datos_usuario=user_data)
-        return updated_user
+        ip_address = request.client.host # type: ignore
+        user_agent = request.headers.get("user-agent")
+        nuevo_invitado = crear_sesion_invitado(db, ip_address, user_agent) # type: ignore
+        return nuevo_invitado
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+
+@app.post("/guests/interact")
+def registrar_interaccion_invitado_endpoint(
+    request: InteraccionInvitadoRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Llama a la función de servicio que contiene la lógica de negocio
+        registrar_interaccion_invitado(
+            db,
+            request.id_invitado,
+            request.id_cripto, # type: ignore
+            request.id_moneda, # type: ignore
+        )
+        return {"mensaje": "Interacción registrada con éxito."}
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.post("/users/login", response_model=UsuarioSchema)
+@app.post("/guests/cleanup")
+def limpiar_sesiones_inactivas_endpoint(db: Session = Depends(get_db)):
+    try:
+        resultado = actualizar_estado_sesiones_inactivas(db)
+        return resultado
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {e}")
+
+@app.post("/users/login", response_model=TokenSchema)
 def Login(credenciales: LoginSchema, db: Session = Depends(get_db)):
-    from servicio_usuarios.services.user_enter_services import LoginUsuarioSeguro
     try:
         usuario_logeado = LoginUsuarioSeguro(db=db, credenciales=credenciales)
-        return usuario_logeado
+        if not usuario_logeado:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        access_token = create_access_token(data={"sub": str(usuario_logeado.id_usuario)})
+        return {"access_token": access_token, "token_type": "bearer"}
     except HTTPException as e:
         raise e
     except Exception as e:

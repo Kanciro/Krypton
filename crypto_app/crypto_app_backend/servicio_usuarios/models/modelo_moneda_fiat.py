@@ -15,3 +15,4 @@ class MonedaFiat(Base):
 
     valores_fiat = relationship("ValorFiat", back_populates="moneda_fiat")
     consultas_usuario = relationship("ConsultasUsuario", back_populates="moneda_fiat")
+    interacciones_invitados = relationship("InteraccionInvitado", back_populates="moneda_fiat")

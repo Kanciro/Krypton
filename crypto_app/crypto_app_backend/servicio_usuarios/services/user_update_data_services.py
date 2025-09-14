@@ -23,7 +23,7 @@ def ActualizarUsuario(db: Session, usuario_id: int, datos_usuario: UsuarioActual
         usuario_encontrado = db.query(Usuario).filter(Usuario.id_usuario == usuario_id).first()
         
         # Si se quiere actualizar el correo, verificar que no exista otro usuario con ese correo
-        if datos_usuario.correo and datos_usuario.correo != usuario_encontrado.correo: 
+        if datos_usuario.correo and datos_usuario.correo != usuario_encontrado.correo:  # type: ignore
             correo_existente = (
                 db.query(Usuario)
                 .filter(Usuario.correo == datos_usuario.correo, Usuario.id_usuario != usuario_id)
@@ -35,19 +35,19 @@ def ActualizarUsuario(db: Session, usuario_id: int, datos_usuario: UsuarioActual
         # Actualizar solo los campos que se enviaron (no None)
         if datos_usuario.nombre is not None:
             print(f"Actualizando nombre: {datos_usuario.nombre}")
-            usuario_encontrado.nombre = datos_usuario.nombre
+            usuario_encontrado.nombre = datos_usuario.nombre # type: ignore
         
         if datos_usuario.correo is not None:
             print(f"Actualizando correo: {datos_usuario.correo}")
-            usuario_encontrado.correo = datos_usuario.correo
+            usuario_encontrado.correo = datos_usuario.correo # type: ignore
         
         if datos_usuario.fecha_nacimiento is not None:
             print(f"Actualizando fecha_nacimiento: {datos_usuario.fecha_nacimiento}")
-            usuario_encontrado.fecha_nacimiento = datos_usuario.fecha_nacimiento
+            usuario_encontrado.fecha_nacimiento = datos_usuario.fecha_nacimiento # type: ignore
         
         if datos_usuario.contraseña is not None:
             print("Actualizando contraseña")
-            usuario_encontrado.contraseña = hashContraseña(datos_usuario.contraseña)
+            usuario_encontrado.contraseña = hashContraseña(datos_usuario.contraseña) # type: ignore
         
         print("Guardando cambios en la base de datos...")
         db.commit()

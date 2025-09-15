@@ -1,104 +1,65 @@
-import { Background } from '@react-navigation/elements';
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground } from 'react-native';
+import React from 'react';
+import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import styles from '../styles/LoginStyles';
+import Header from '../components/header';
+import Menu from '../components/menu';
+import { useLogin } from '../services/LoginLogic';
 
 export default function LoginScreen() {
-  const [usuario, setUsuario] = useState('');
-  const [contrasena, setContrasena] = useState('');
-
-  const handleLogin = () => {
-    // Aquí puedes agregar la lógica para autenticar al usuario
-    // Por ejemplo, enviar 'usuario' y 'contrasena' a una API.
-    console.log('Iniciando sesión con:', usuario, contrasena);
-  };
+  const { 
+    usuario, 
+    setUsuario, 
+    contrasena, 
+    setContrasena, 
+    handleLogin, 
+    isLoading, 
+    bottomSheetRef, 
+    handleOpenMenu 
+  } = useLogin();
 
   return (
+    <View style={styles.main}>
+      <Header />
       <View style={styles.container}>
-        <Text style={styles.logo}>KRYPTON</Text>
-
-        <View style={styles.inputView}>
-          <TextInput
-            style={styles.inputText}
-            placeholder="Usuario"
-            placeholderTextColor="#fff"
-            onChangeText={text => setUsuario(text)}
-          />
-        </View>
-        <View style={styles.inputView}>
-          <TextInput
-            secureTextEntry
-            style={styles.inputText}
-            placeholder="Contraseña"
-            placeholderTextColor="#fff"
-            onChangeText={text => setContrasena(text)}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-          <Text style={styles.loginText}>INICIAR SESIÓN</Text>
+        <Text style={styles.title}>Login</Text>
+        <TextInput
+          style={styles.inputText}
+          placeholder="Usuario"
+          placeholderTextColor="#fff"
+          onChangeText={setUsuario}
+          value={usuario}
+        />
+        <TextInput
+          secureTextEntry
+          style={styles.inputText}
+          placeholder="Contraseña"
+          placeholderTextColor="#fff"
+          onChangeText={setContrasena}
+          value={contrasena}
+        />
+        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginText}>INICIAR SESIÓN</Text>
+          )}
         </TouchableOpacity>
-
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleOpenMenu}>
           <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity>
-          <Text style={styles.register}>¿No tienes cuenta? Regístrate</Text>
-        </TouchableOpacity>
-
       </View>
-
+      <View style={styles.SubContainer}>
+        <Text style={styles.register_text}>¿No tienes cuenta?</Text>
+        <TouchableOpacity onPress={() => router.push('/screens/register')}>
+          <Text style={styles.register} >Regístrate</Text>
+        </TouchableOpacity>
+        <Text style={styles.register_text}>o</Text>
+        <TouchableOpacity>
+          <Text style={styles.register}>continua como invitado</Text>
+        </TouchableOpacity>
+      </View>
+      <Menu ref={bottomSheetRef} />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)', // Un fondo oscuro semi-transparente para que el texto resalte
-  },
-  logo: {
-    fontWeight: 'bold',
-    fontSize: 50,
-    color: '#fff',
-    marginBottom: 40,
-  },
-  inputView: {
-    width: '80%',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 25,
-    height: 50,
-    marginBottom: 20,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  inputText: {
-    height: 50,
-    color: 'white',
-  },
-  loginBtn: {
-    width: '80%',
-    backgroundColor: '#008b8b', // Un color similar al verde aguamarina de la imagen
-    borderRadius: 25,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 40,
-    marginBottom: 10,
-  },
-  loginText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  forgot: {
-    color: 'white',
-    fontSize: 12,
-  },
-  register: {
-    color: 'white',
-    marginTop: 15,
-    fontSize: 14,
-  },
-});

@@ -1,7 +1,9 @@
 # crypto_data_service_gratuito.py
 import requests
-
-
+from typing import List
+from fastapi import HTTPException
+from servicio_usuarios.models.modelo_criptomonedas import Criptomoneda
+from sqlalchemy.orm import Session
 def traerTopCriptomonedas():
     try:
         url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -51,3 +53,13 @@ if __name__ == "__main__":
             )
     else:
         print("No se pudieron obtener los datos de las criptomonedas.")
+
+def traerCriptomonedas(db: Session) -> List[Criptomoneda]:
+    
+    try:
+        criptos = db.query(Criptomoneda).all()
+        if not criptos:
+            raise HTTPException(status_code=404, detail="No se encontraron criptomonedas.")
+        return criptos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener las criptomonedas: {str(e)}")

@@ -1,45 +1,49 @@
 # main.py
 
-from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query, Path, Request
-from typing import List
+from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query, Path, Request, status
+from typing import List, Optional
 import asyncio
 import logging
 import json
 from fastapi.middleware.cors import CORSMiddleware
 # Tus imports existentes
-from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas
+from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas, traerCriptomonedas
+from servicio_usuarios.schemas.schema_criptomonedas import CriptomonedaSchema  
 from servicio_datos_cripto.services.crypto_data_id_service import ObtenerValorPorSimbolo
 # Importa la función actualizada
 from servicio_datos_cripto.services.crypto_sync_service import actualizar_criptomonedas_en_db
-from servicio_datos_cripto.services.fiat_data_service import traerTopMonedasFiat
-from servicio_usuarios.services.user_data_services import RegistrarUsuario
+from servicio_datos_cripto.services.fiat_data_service import  traerMonedasFiat
+from servicio_usuarios.services.user_data_services import RegistrarUsuario, hashContraseña
 from servicio_usuarios.schemas.schema_users import (
     UsuarioCrear,
     UsuarioBase as UsuarioSchema, 
     UsuarioActualizar
 )
 from jose import jwt, JWTError
-from datetime import datetime
 from servicio_usuarios.services.auth.auth_utils import get_current_user
-from servicio_usuarios.services.email_services.email_sender import send_verification_email, send_registration_email
+from servicio_usuarios.services.email_services.email_sender import send_verification_email
 from servicio_usuarios.schemas.schema_guest import InvitadoResponse
 import random
 import string
+from servicio_usuarios.services.user_enquiry_services import registrarConsultaUsuario
 from servicio_usuarios.schemas.schema_valor_historico import ValorHistoricoSchema
 from servicio_usuarios.models.modelo_usuario import Usuario
 from servicio_usuarios.services.user_update_data_services import ActualizarUsuario
 from servicio_usuarios.services.user_delete_services import DesactivarUsuario, ReactivarUsuario
-from servicio_usuarios.services.guest_services import crear_sesion_invitado, registrar_interaccion_invitado, actualizar_estado_sesiones_inactivas
+from servicio_usuarios.services.guest_services import crear_sesion_invitado, registrar_interaccion_invitado, actualizar_estado_sesiones_inactivas, traerOCrearInvitado
 from servicio_usuarios.schemas.schema_guest import InvitadoResponse, InteraccionInvitadoRequest
 from sqlalchemy.orm import Session
+from servicio_usuarios.schemas.schema_moneda_fiat import MonedaFiatSchema
 from servicio_usuarios.schemas.schema_usuario_login import LoginSchema
 from servicio_usuarios.database.db import get_db
+from servicio_usuarios.services.password_services import solicitarRestablecimientoDeCredencial
 from servicio_usuarios.schemas.schema_correo_update import CorreoActualizarSchema, CorreoVerificarSchema
 from servicio_usuarios.services.auth.auth_utils import get_current_user
 from servicio_usuarios.services.auth.auth_utils import create_access_token, get_current_user
 from servicio_usuarios.schemas.schema_usuario_login import TokenSchema
 from servicio_usuarios.services.user_enter_services import LoginUsuarioSeguro
 from servicio_usuarios.services.auth.auth_utils import SECRET_KEY, ALGORITHM
+from servicio_usuarios.schemas.schema_recuperar_contraseña import EmailRequest, PasswordReset  
 
 # Configuración básica de logging
 logging.basicConfig(level=logging.INFO)
@@ -102,7 +106,7 @@ app.add_middleware(
 
 
 
-@app.get("/api/v1/cryptocurrencies/popular")
+"""@app.get("/api/v1/cryptocurrencies/popular")
 async def leerCripto():
     cryptos = traerTopCriptomonedas()
     if cryptos is None:
@@ -112,7 +116,7 @@ async def leerCripto():
         )
     return cryptos
 
-
+"""
 
 """
 @app.get("/api/v1/cryptocurrencies/popular/base_de_datos")
@@ -131,7 +135,17 @@ async def leerCriptoConBD(db: Session = Depends(get_db)):
         )
     return result 
 """
-
+@app.get("/cryptos/todas", response_model=List[CriptomonedaSchema], status_code=200)
+def obtener_todas_las_criptos(db: Session = Depends(get_db)):
+    """
+    Endpoint para obtener la lista completa de criptomonedas desde la base de datos.
+    """
+    try:
+        all_cryptos = traerCriptomonedas(db=db)
+        return all_cryptos
+    except HTTPException as e:
+        raise e
+    
 @app.get(
     "/api/v1/cryptocurrencies/history/by_symbol/{simbolo_cripto}",
     response_model=List[ValorHistoricoSchema],
@@ -148,8 +162,15 @@ async def leer_historico_por_simbolo(
         raise HTTPException(status_code=404, detail="Criptomoneda no encontrada.")
 
     return valores_historicos
-
-
+@app.get("/fiat/all", response_model=List[MonedaFiatSchema], status_code=200)
+def obtener_todas_las_monedas_fiat(db: Session = Depends(get_db)):
+    try:
+        all_fiat = traerMonedasFiat(db=db)
+        return all_fiat
+    except HTTPException as e:
+        raise e
+         
+"""
 @app.get("/api/v1/cryptocurrencies/popular/monedas_fiat/popular")
 async def leerMonedasFiat():
     fiats = traerTopMonedasFiat()
@@ -159,8 +180,8 @@ async def leerMonedasFiat():
             detail="No se pudieron obtener los datos de las monedas fiat.",
         )
     return fiats
-
-
+"""
+"""
 @app.get("/api/v1/cryptocurrencies/popular/monedas_fiat/popular/base_de_datos")
 async def leerMonedasFiatConBD(db: Session = Depends(get_db)):
     fiats = traerTopMonedasFiat()
@@ -170,6 +191,7 @@ async def leerMonedasFiatConBD(db: Session = Depends(get_db)):
             detail="No se pudieron obtener los datos de las monedas fiat.",
         )
     return fiats
+"""
 
 """@app.get("/api/v1/cryptocurrencies/popular/valores_fiat")
 async def leerValoresFiat():
@@ -182,6 +204,19 @@ async def leerValoresFiat():
         )
     return precios"""
 
+@app.post("/users/login", response_model=TokenSchema)
+def Login(credenciales: LoginSchema, db: Session = Depends(get_db)):
+    try:
+        usuario_logeado = LoginUsuarioSeguro(db=db, credenciales=credenciales)
+        if not usuario_logeado:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        access_token = create_access_token(data={"sub": str(usuario_logeado.id_usuario)})
+        return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+        
 
 @app.post("/users/registrar", status_code=201)
 def CrearUsuario(user_data: UsuarioCrear, db: Session = Depends(get_db)):
@@ -280,11 +315,61 @@ def request_update_email(
     email_sent = send_verification_email(correo_data.nuevo_correo, verification_code)
 
     if not email_sent:
-    # Si falla el envío del correo, puedes revertir la base de datos y lanzar una excepción
         db.rollback()
         raise HTTPException(status_code=500, detail="No se pudo enviar el correo de verificación. Inténtalo de nuevo.")
 
     return {"mensaje": "Correo de verificación enviado. Revisa tu bandeja de entrada."}
+
+
+@app.post("/users/actualizar-password", status_code=status.HTTP_200_OK)
+def forgot_password(
+    request: EmailRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        response = solicitarRestablecimientoDeCredencial(db, request.correo)
+        return response
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+    
+@app.post("/users/reset-password", status_code=status.HTTP_200_OK)
+def reset_password(
+    request: PasswordReset,
+    db: Session = Depends(get_db)
+):
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido o expirado",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+
+        payload = jwt.decode(request.token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: Optional[str] = payload.get("sub")
+        
+        if user_id is None:
+            raise credentials_exception
+            
+    except JWTError:
+      
+        raise credentials_exception
+   
+    usuario = db.query(Usuario).filter(Usuario.id_usuario == int(user_id)).first()
+    if not usuario:
+        raise credentials_exception
+    contraseña_hasheada = hashContraseña(request.nueva_contraseña)
+    
+    usuario.contraseña = contraseña_hasheada # type: ignore
+    db.commit()
+    db.refresh(usuario)
+    return {"mensaje": "Contraseña actualizada con éxito."}
 
 @app.delete("/users/desactivar", status_code=200)
 def desactivar_usuario_endpoint(
@@ -330,24 +415,7 @@ def crear_sesion_invitado_endpoint(
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
 
-@app.post("/guests/interact")
-def registrar_interaccion_invitado_endpoint(
-    request: InteraccionInvitadoRequest,
-    db: Session = Depends(get_db)
-):
-    try:
-        # Llama a la función de servicio que contiene la lógica de negocio
-        registrar_interaccion_invitado(
-            db,
-            request.id_invitado,
-            request.id_cripto, # type: ignore
-            request.id_moneda, # type: ignore
-        )
-        return {"mensaje": "Interacción registrada con éxito."}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
 
 @app.post("/guests/cleanup")
 def limpiar_sesiones_inactivas_endpoint(db: Session = Depends(get_db)):
@@ -358,19 +426,7 @@ def limpiar_sesiones_inactivas_endpoint(db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error interno del servidor: {e}")
 
-@app.post("/users/login", response_model=TokenSchema)
-def Login(credenciales: LoginSchema, db: Session = Depends(get_db)):
-    try:
-        usuario_logeado = LoginUsuarioSeguro(db=db, credenciales=credenciales)
-        if not usuario_logeado:
-            raise HTTPException(status_code=401, detail="Credenciales inválidas")
-        access_token = create_access_token(data={"sub": str(usuario_logeado.id_usuario)})
-        return {"access_token": access_token, "token_type": "bearer"}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
-    
+
 
 
 """
@@ -393,6 +449,59 @@ def CargarHistoricoDesdeDb(crypto_id: str, days: int, db: Session = Depends(get_
         raise HTTPException(status_code=500, detail="Error al cargar los datos históricos desde la base de datos.")
     return result
 """
+@app.post("/guests/interact", status_code=status.HTTP_201_CREATED)
+def registrar_interaccion_invitado_endpoint(
+    request: Request,
+    id_cripto: int = None, # type: ignore
+    id_moneda: int = None, # type: ignore
+    db: Session = Depends(get_db)
+):
+
+    try:
+        
+        direccion_ip = request.client.host if request.client else None
+        if not direccion_ip:
+            raise HTTPException(status_code=400, detail="No se pudo obtener la dirección IP del cliente.")
+        invitado = traerOCrearInvitado(db, direccion_ip)
+        response = registrar_interaccion_invitado(
+            db=db,
+            id_invitado=invitado.id_invitado, # type: ignore
+            id_cripto=id_cripto,
+            id_moneda=id_moneda,
+        )
+        return response
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@app.post("/users/consultas", status_code=status.HTTP_201_CREATED)
+def registrar_consulta(
+    id_cripto: int,
+    id_moneda: int,  
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    
+    try:
+        # Llama al servicio para registrar la consulta
+        response = registrarConsultaUsuario(
+            db=db,
+            id_usuario=current_user.id_usuario, # type: ignore
+            id_cripto=id_cripto,
+            id_moneda=id_moneda 
+        )
+        return response
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor al registrar la consulta: {str(e)}"
+        )
+    
+
 
 @app.websocket("/ws/cryptocurrencies")
 async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):

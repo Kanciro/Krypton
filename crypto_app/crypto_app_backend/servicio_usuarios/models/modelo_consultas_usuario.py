@@ -6,16 +6,12 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from ..database.db import Base
 
-# Corrección: No importes los modelos aquí para evitar importaciones circulares.
-# SQLAlchemy resolverá las cadenas de texto.
-
-
 class ConsultasUsuario(Base):
     __tablename__ = "consultas_usuario"
 
     id_cripto = Column(Integer, ForeignKey("criptomonedas.id_cripto"), nullable=False)
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
-    id_moneda_fiat = Column(
+    id_moneda = Column(
         Integer, ForeignKey("moneda_fiat.id_moneda"), nullable=False
     )
 

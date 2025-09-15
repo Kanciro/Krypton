@@ -1,4 +1,8 @@
 import requests
+from typing import List
+from fastapi import HTTPException
+from servicio_usuarios.models.modelo_moneda_fiat import MonedaFiat
+from sqlalchemy.orm import Session
 
 
 def traerTopMonedasFiat():
@@ -79,3 +83,20 @@ if __name__ == "__main__":
                 )
     else:
         print("No se pudieron obtener los precios.")
+
+
+# servicio_usuarios/services/fiat_services.py
+
+
+
+def traerMonedasFiat(db: Session) -> List[MonedaFiat]:
+    """
+    Obtiene la lista de todas las monedas fiat desde la base de datos.
+    """
+    try:
+        fiat_currencies = db.query(MonedaFiat).all()
+        if not fiat_currencies:
+            raise HTTPException(status_code=404, detail="No se encontraron monedas fiat.")
+        return fiat_currencies
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener las monedas fiat: {str(e)}")

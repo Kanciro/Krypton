@@ -102,3 +102,49 @@ def send_registration_email(receiver_email: str, token: str):
     except Exception as e:
         print(f"Error al enviar el correo de registro: {e}")
         return False
+    
+
+
+
+def send_password_reset_email(receiver_email: str, token: str):
+    """
+    Envía un correo electrónico con un enlace para restablecer la contraseña.
+    """
+    subject = "Restablece tu contraseña de Krypton"
+    
+
+    base_url = "http://tu-frontend.com/reset-password" 
+    reset_link = f"{base_url}?token={token}"
+
+    body = f"""
+    Hola,
+
+    Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.
+    Haz clic en el siguiente enlace para crear una nueva contraseña:
+
+    {reset_link}
+
+    Si no has solicitado este cambio, por favor ignora este correo. Este enlace expirará en 15 minutos.
+
+    Saludos,
+    El equipo de Krypton
+    """
+
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_ADDRESS
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain', _charset="utf-8"))
+
+    print(f"Token de restablecimiento de contraseña (SOLO PARA PRUEBAS): {token}")
+
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.send_message(msg)
+        print(f"Correo de restablecimiento enviado a {receiver_email}")
+        return True
+    except Exception as e:
+        print(f"Error al enviar el correo de restablecimiento: {e}")
+        return False

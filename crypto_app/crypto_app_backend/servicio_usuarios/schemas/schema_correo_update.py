@@ -8,3 +8,4 @@ class CorreoVerificarSchema(BaseModel):
 
 class CorreoActualizarSchema(BaseModel):
     nuevo_correo: EmailStr
+

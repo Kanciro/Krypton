@@ -4,6 +4,8 @@ from .crypto_data_service import traerTopCriptomonedas
 from servicio_usuarios.models.modelo_criptomonedas import Criptomoneda
 from datetime import datetime
 from servicio_usuarios.models.modelo_valor_historico import ValorHistorico
+from typing import List
+from fastapi import HTTPException
 
 def actualizar_criptomonedas_en_db(db: Session, criptos_api: list):
 
@@ -86,3 +88,4 @@ def actualizar_criptomonedas_en_db(db: Session, criptos_api: list):
         db.rollback()
         print(f"Error al actualizar la base de datos: {e}")
         return None
+

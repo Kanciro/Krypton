@@ -17,11 +17,12 @@ from servicio_usuarios.services.user_data_services import RegistrarUsuario, hash
 from servicio_usuarios.schemas.schema_users import (
     UsuarioCrear,
     UsuarioBase as UsuarioSchema, 
-    UsuarioActualizar
+    UsuarioActualizar, 
+    VerificacionCodigo
 )
 from jose import jwt, JWTError
 from servicio_usuarios.services.auth.auth_utils import get_current_user
-from servicio_usuarios.services.email_services.email_sender import send_verification_email
+from servicio_usuarios.services.email_services.email_sender import send_verification_email, send_registration_email_with_code
 from servicio_usuarios.schemas.schema_guest import InvitadoResponse
 import random
 import string
@@ -227,38 +228,32 @@ def CrearUsuario(user_data: UsuarioCrear, db: Session = Depends(get_db)):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
-    
-@app.post("/users/verify", status_code=200)
-def verificar_correo(token: str, db: Session = Depends(get_db)):
 
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Token inválido o expirado",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub") # type: ignore
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
 
-   
-    usuario = db.query(Usuario).filter(Usuario.id_usuario == int(user_id)).first()
+@app.post("/verify-code", status_code=status.HTTP_200_OK)
+def verificar_codigo(data: VerificacionCodigo, db: Session = Depends(get_db)):
+    """
+    Verifica un usuario con un código de 4 dígitos.
+    """
+    usuario = db.query(Usuario).filter(Usuario.correo == data.correo).first()
     
+    # Check if user exists and the code matches
+    if not usuario or usuario.codigo_verificacion != data.codigo:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código o correo incorrecto.",
+        )
     
-    if not usuario or usuario.is_verified is True:
-        raise HTTPException(status_code=400, detail="El correo ya ha sido verificado o el usuario no existe.")
-
-    usuario.is_verified = True  # type: ignore
-    usuario.is_active = True  # type: ignore
+    # Activate the user account
+    usuario.is_verified = True
+    usuario.is_active = True
+    usuario.codigo_verificacion = None  # Clear the code after use
     db.commit()
     db.refresh(usuario)
     
-    return {"mensaje": "¡Correo verificado con éxito! Ya puedes iniciar sesión."}
-    
+    return {"mensaje": "Cuenta verificada exitosamente. Ahora puedes iniciar sesión."}
+
+
 
 @app.put("/users/actualizar", response_model=UsuarioSchema, status_code=200)
 def actualizar_usuario_endpoint(

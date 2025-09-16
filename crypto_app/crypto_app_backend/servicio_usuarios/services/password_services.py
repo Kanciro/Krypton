@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from datetime import timedelta
 from servicio_usuarios.models.modelo_usuario import Usuario
 from servicio_usuarios.services.auth.auth_utils import create_access_token
-from servicio_usuarios.services.email_services.email_sender import send_password_reset_email
+from servicio_usuarios.services.email_services.email_sender import send_registration_email_with_code
 
 def solicitarRestablecimientoDeCredencial(db: Session, correo: str):
     """
@@ -27,7 +27,7 @@ def solicitarRestablecimientoDeCredencial(db: Session, correo: str):
     )
 
     
-    email_sent = send_password_reset_email(usuario.correo, reset_token) # type: ignore
+    email_sent = send_registration_email_with_code(usuario.correo, reset_token) # type: ignore
 
     if not email_sent:
         raise HTTPException(

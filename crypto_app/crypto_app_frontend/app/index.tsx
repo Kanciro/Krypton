@@ -16,6 +16,7 @@ const SplashScreen = () => {
         <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/login')}>
           <Text style={styles.buttonText}>Ir a Login</Text>
         </TouchableOpacity>
+        
     </View>
   );
 };

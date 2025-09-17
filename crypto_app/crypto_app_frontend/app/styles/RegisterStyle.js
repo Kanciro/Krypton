@@ -1,37 +1,37 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
-    main:{
+    main: {
+        flex: 1, 
         backgroundColor: '#000042',
-        paddingBottom: '50%',
-        alignItems: 'center',
-        position: 'absolute',
-        height: '100%',
-        width: '100%',
+    },
+    contentContainer: {
+        flex: 1, 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
     },
     Container: {
         backgroundColor: '#7600a6',
+        width: '80%', 
         marginTop: 20,
-        paddingTop: 15,
-        paddingLeft: 25,
-        paddingRight: 25,
-        paddingBottom: 20,
-        width: 'auto',
-        height: 'auto',
+        padding: 20,
+        alignItems: 'center', 
     },
     title: {
         fontSize: 17,
         color: '#fff',
         fontWeight: 'bold',
-        marginBottom: 10,
-        alignSelf:'center',
+        marginBottom: 20, 
+        alignSelf: 'center',
     },
     input: {
         width: '100%',
-        backgroundColor: 'rgba(0, 0, 153, 0.62)',
+        backgroundColor: 'rgba(0, 0, 153, 0.69)',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        marginBottom: 10, 
         color: '#fff',
-        padding: 7,
-        marginBottom: 3,
+        borderRadius: 5,
     },
     button: {
         backgroundColor: '#00ffff',
@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
     },
     checkboxContainer: {
         flexDirection: 'row',
-        marginTop: 2,
-        marginBottom: 3,
+        alignItems: 'center',
+        marginBottom: 10,
     },
     label: {
         color: '#fff',
@@ -57,8 +57,9 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     eula: {
-        color:'#00ffff'
-    }
+        color: '#00ffff',
+        textDecorationLine: 'underline', 
+    },
 });
 
 export default styles;

@@ -10,6 +10,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: '#fff',
     marginBottom: 20,
+    marginTop: '90%',
     fontWeight: 'bold',
   },
   button: {
@@ -23,6 +24,11 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  menubutton: {
+    backgroundColor: '#00ffff',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 

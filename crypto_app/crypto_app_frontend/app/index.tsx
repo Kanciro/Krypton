@@ -1,23 +1,26 @@
 import { router } from 'expo-router';
 import React from 'react';
-import {Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import Header from './components/header';
+import MenuModal from './components/MenuModal'; // Importa el componente modificado
 import styles from './styles/IndexStyles';
 
-// Componente de la pantalla principal (Splash Screen)
 const SplashScreen = () => {
+  const menuOptions = [
+    { label: 'Ir a Login', action: () => router.push('/screens/login') },
+    { label: 'Ir a Registro', action: () => router.push('/screens/register') },
+    { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
+    { label: 'Contacto', action: () => alert('Contacto de soporte') },
+  ];
+
   return (
     <View style={styles.container}>
-      <Header/>
+      <Header />
       <Text style={styles.title}>¡Bienvenido a KRYPTON!</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/register')}>
-          <Text style={styles.buttonText}>Ir a Registro</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/login')}>
-          <Text style={styles.buttonText}>Ir a Login</Text>
-        </TouchableOpacity>
-        
+  
+      <MenuModal options={menuOptions} />
     </View>
   );
 };
+
 export default SplashScreen;

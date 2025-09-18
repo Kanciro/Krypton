@@ -14,6 +14,7 @@ export default function LoginScreen() {
     setContrasena,
     handleLogin,
     isLoading,
+    handleGuestLogin,
   } = useLogin();
 
   const menuOptions = [
@@ -68,7 +69,7 @@ export default function LoginScreen() {
             <Text style={styles.register}>Regístrate</Text>
           </TouchableOpacity>
           <Text style={styles.register_text}>o</Text>
-          <TouchableOpacity onPress={() => console.log('Continua como invitado')}>
+          <TouchableOpacity onPress={handleGuestLogin} disabled={isLoading}>
             <Text style={styles.register}>continua como invitado</Text>
           </TouchableOpacity>
         </View>

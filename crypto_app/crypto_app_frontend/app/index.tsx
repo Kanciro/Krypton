@@ -10,8 +10,8 @@ import { router } from 'expo-router';
 
 
 const SplashScreen = () => {
-  const [selectedDays, setSelectedDays] = useState('1'); // Estado para los días
-  const [selectedSymbol, setSelectedSymbol] = useState('BTC'); // Estado para el símbolo
+  const [selectedDays, setSelectedDays] = useState('5'); // Estado para los días
+  const [selectedSymbol, setSelectedSymbol] = useState('ETH'); // Estado para el símbolo
 
   const menuOptions = [
     { label: 'Ir a Inicio', action: () => router.push('/screens/login') },
@@ -48,7 +48,7 @@ const SplashScreen = () => {
           dropdownIconColor="#00ffff"
         >
           {symbolOptions.map((option) => (
-            <Picker.Item key={option.value} label={option.label} value={option.value} color="#fff" />
+            <Picker.Item key={option.value} label={option.label} value={option.value} color="#000000" />
           ))}
         </Picker>
       </View>

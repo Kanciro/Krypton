@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
-import { CandlestickChart } from 'react-native-wagmi-charts';
+import { LineChart } from 'react-native-wagmi-charts';
 import { MotiView } from 'moti';
 
 const CandlestickChartComponent = ({ symbol, days }) => {
@@ -17,14 +17,12 @@ const CandlestickChartComponent = ({ symbol, days }) => {
         const json = await response.json();
 
         if (response.ok) {
-          // wagmi-charts usa `timestamp`, `open`, `high`, `low`, `close`
+          // Adaptar los datos de tu API al formato requerido por la gráfica de líneas
           const chartData = json.map(item => ({
-            timestamp: new Date(item.timestamp).getTime(),
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
+            timestamp: new Date(item.fecha).getTime(),
+            value: item.valor,
           }));
+
           setData(chartData);
         } else {
           throw new Error(json.detail || 'Failed to fetch data');
@@ -52,13 +50,19 @@ const CandlestickChartComponent = ({ symbol, days }) => {
   }
 
   return (
-    <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300 }}>
-      <CandlestickChart.Provider data={data}>
-        <CandlestickChart width={Dimensions.get('window').width * 0.9} height={200}>
-          <CandlestickChart.Candles />
-          <CandlestickChart.Crosshair />
-        </CandlestickChart>
-      </CandlestickChart.Provider>
+    <MotiView
+      from={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ type: 'timing', duration: 300 }}
+    >
+      <LineChart.Provider data={data}>
+        <LineChart width={Dimensions.get('window').width * 0.9} height={200} backgroundColor="#000">
+          <LineChart.Path color="#00ffff" />
+          <LineChart.Cursor color="#00ffff">
+            <LineChart.Tooltip textStyle={{ color: '#fff' }} />
+          </LineChart.Cursor>
+        </LineChart>
+      </LineChart.Provider>
     </MotiView>
   );
 };

@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Checkbox } from 'expo-checkbox';
-import styles from '../styles/RegisterStyle';
-import registerLogic from '../services/RegisterLogic';
-import Header from '../components/header';
+import styles from '../_styles/RegisterStyle';
+import registerLogic from '../_services/RegisterLogic';
+import Header from '../_components/header';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import MenuModal from '../components/MenuModal';
+import MenuModal from '../_components/MenuModal';
 
 const menuOptions = [
-    { label: 'Ir a Login', action: () => router.push('/screens/login') },
-    { label: 'Ir a Registro', action: () => router.push('/screens/register') },
+    { label: 'Ir a Inicio', action: () => router.push('/') },
+    { label: 'Ir a Login', action: () => router.push('/screens/login') }, 
     { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
     { label: 'Contacto', action: () => alert('Contacto de soporte') },
 ];

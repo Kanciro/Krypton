@@ -69,6 +69,10 @@ export default function RootLayout() {
         name="screens/register"
         options={{ headerShown: false }}
         />
+        <Stack.Screen
+        name="screens/"
+        options={{ headerShown: false }}
+        />
       </Stack>
     </GestureHandlerRootView>
   );

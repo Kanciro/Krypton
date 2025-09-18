@@ -1,10 +1,10 @@
 import React from 'react';
 import { router } from 'expo-router';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import styles from '../styles/LoginStyles';
-import Header from '../components/header';
-import MenuModal from '../components/MenuModal';
-import { useLogin } from '../services/LoginLogic';
+import styles from '../_styles/LoginStyles';
+import Header from '../_components/header';
+import MenuModal from '../_components/MenuModal';
+import { useLogin } from '../_services/LoginLogic';
 
 export default function LoginScreen() {
   const {
@@ -21,6 +21,7 @@ export default function LoginScreen() {
     { label: 'Ir a Registro', action: () => router.push('/screens/register') },
     { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
     { label: 'Contacto', action: () => alert('Contacto de soporte') },
+    { label: 'Verificar', action: () => router.push('/screens/verify_email') },
   ];
 
   return (

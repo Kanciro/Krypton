@@ -2,18 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-wagmi-charts';
 import { MotiView } from 'moti';
+import Constants from 'expo-constants';
 
 const CandlestickChartComponent = ({ symbol, days }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const API_URL = Constants.expoConfig.extra.API_URL;
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://25.56.145.23:8000/api/v1/cryptocurrencies/history/by_symbol/${symbol}?dias=${days}`);
+        const response = await fetch(`${API_URL}/api/v1/cryptocurrencies/history/by_symbol/${symbol}?dias=${days}`);
         const json = await response.json();
 
         if (response.ok) {

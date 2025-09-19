@@ -2,14 +2,15 @@ import { useState, useRef } from 'react';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import Constants from 'expo-constants';
 
 export function useLogin() {
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const bottomSheetRef = useRef(null);
-  
-  const API_URL = 'http://25.56.145.23:8000'; 
+
+  const API_URL = Constants.expoConfig.extra.API_URL;
 
   const handleLogin = async () => {
     if (!usuario || !contrasena) {

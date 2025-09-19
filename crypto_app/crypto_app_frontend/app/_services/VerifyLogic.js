@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { Alert } from 'react-native';
+import Constants from 'expo-constants';
 
 const useVerifyLogic = () => {
   // Obtiene los parámetros de la ruta, como el email
@@ -10,6 +11,8 @@ const useVerifyLogic = () => {
   // Estado para el código de verificación
   const [code, setCode] = useState('');
 
+  const API_URL = Constants.expoConfig.extra.API_URL;
+
   const handleVerification = async (navigation) => {
     try {
       // Validar que el código no esté vacío
@@ -17,8 +20,8 @@ const useVerifyLogic = () => {
         Alert.alert('Error', 'Por favor, ingresa el código de verificación.');
         return;
       }
-      
-      const response = await fetch('http://25.56.145.23:8000/verify-code', {
+
+      const response = await fetch(`${API_URL}/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ correo: email, codigo: code }),

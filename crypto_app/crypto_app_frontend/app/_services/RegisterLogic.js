@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
+import Constants from 'expo-constants';
 
 // Función para validar el formato del correo electrónico
 const validateEmail = (email) => {
@@ -9,7 +10,7 @@ const validateEmail = (email) => {
 
 // Función para validar la fortaleza de la contraseña
 const validatePassword = (password) => {
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]|:;"'<>,.?/~`]).{8,}$/;
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]|:;"'<>,.?/~`]).{6,}$/;
     return regex.test(password);
 };
 
@@ -34,6 +35,8 @@ const registerLogic = (router) => {
     const [date, setDate] = useState('');
     const [acceptTerms, setAcceptTerms] = useState(false);
 
+    const API_URL = Constants.expoConfig.extra.API_URL;
+
     const handleRegistration = async () => {
         if (!username || !password || !email || !date) {
             Alert.alert('Error de validación', 'Por favor, completa todos los campos.');
@@ -48,7 +51,7 @@ const registerLogic = (router) => {
         if (!validatePassword(password)) {
             Alert.alert(
                 'Error de validación',
-                'La contraseña debe tener al menos 8 caracteres, incluyendo una letra mayúscula, una minúscula, un número y un carácter especial.'
+                'La contraseña debe tener al menos 6 caracteres, incluyendo una letra mayúscula, una minúscula, un número y un carácter especial.'
             );
             return;
         }
@@ -71,7 +74,7 @@ const registerLogic = (router) => {
         };
 
         try {
-            const response = await fetch('http://25.56.145.23:8000/users/registrar', {
+            const response = await fetch(`${API_URL}/users/registrar`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,24 +1,33 @@
 import { useEffect, useState } from 'react';
-import { Stack } from 'expo-router'; 
+import { Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isGuest, setIsGuest] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
-        const token = await AsyncStorage.getItem('access_token');
-        if (token) {
+        const userToken = await AsyncStorage.getItem('access_token');
+        const guestToken = await AsyncStorage.getItem('guest_token');
+
+        if (userToken) {
           setIsAuthenticated(true);
+          setIsGuest(false);
+        } else if (guestToken) {
+          setIsAuthenticated(true); // Considera la sesión como autenticada para la navegación.
+          setIsGuest(true);
         } else {
           setIsAuthenticated(false);
+          setIsGuest(false);
         }
       } catch (error) {
         console.error("Error checking authentication:", error);
         setIsAuthenticated(false);
+        setIsGuest(false);
       }
     };
 
@@ -36,42 +45,29 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack>
-        {/*
-          1. La pantalla de "index" debe ir primero.
-          2. Su lógica de redirección se encarga de dirigir a los usuarios autenticados a la pantalla de "usuario".
-        */}
         <Stack.Screen
           name="index"
           options={{ headerShown: false }}
-          redirect={isAuthenticated ? true : undefined}
+          redirect={!isAuthenticated ? true : undefined}
         />
-
-        {/*
-          3. La pantalla de "login" se muestra si el usuario NO está autenticado.
-          4. No necesita redirección, ya que el index ya maneja la lógica.
-        */}
         <Stack.Screen
           name="screens/login"
           options={{ headerShown: false }}
+          redirect={isAuthenticated ? true : undefined}
         />
-
-        {/*
-          5. La pantalla de "usuario" es una ruta protegida.
-          6. La redirección se activa si el usuario NO está autenticado.
-        */}
         <Stack.Screen
           name="screens/usuario"
           options={{ headerShown: false }}
           redirect={!isAuthenticated ? true : undefined}
         />
-        {/* Agrega otras pantallas protegidas aquí */}
         <Stack.Screen
-        name="screens/register"
-        options={{ headerShown: false }}
+          name="screens/register"
+          options={{ headerShown: false }}
+          redirect={isAuthenticated ? true : undefined}
         />
         <Stack.Screen
-        name="screens/"
-        options={{ headerShown: false }}
+          name="screens/user"
+          options={{ headerShown: false }}
         />
       </Stack>
     </GestureHandlerRootView>

@@ -1,3 +1,4 @@
+// UserLogic.js
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,6 +29,7 @@ export function UserLogic() {
         if (nombreGuardado) {
           setNombreUsuario(nombreGuardado);
         } else {
+          // Si no hay nombre de usuario, redirige al login inmediatamente
           router.replace('/screens/login');
         }
       } catch (error) {
@@ -108,16 +110,38 @@ export function UserLogic() {
     handleFetch('/users/reactivar', 'POST', { nombre: formData.nombre, contrasena: formData.contrasena });
   };
 
+  // La función de logout mejorada
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('access_token');
-      await AsyncStorage.removeItem('nombre_usuario');
-      Alert.alert('Sesión Cerrada', 'Has cerrado sesión con éxito.');
-      router.replace('/screens/login');
-    } catch (error) {
-      console.error("Error al cerrar sesión", error);
-      Alert.alert('Error', 'Hubo un problema al cerrar la sesión.');
-    }
+    Alert.alert(
+      "Cerrar Sesión",
+      "¿Estás seguro de que deseas cerrar tu sesión?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Sí",
+          onPress: async () => {
+            try {
+              // Limpiar los tokens de autenticación
+              await AsyncStorage.removeItem('access_token');
+              await AsyncStorage.removeItem('nombre_usuario');
+              
+              // Opcional: mostrar un mensaje de éxito
+              Alert.alert('¡Hasta pronto!', 'Has cerrado sesión con éxito.');
+              
+              // Redirigir al usuario a la pantalla de login. 'replace' es clave.
+              router.replace('/screens/login');
+            } catch (error) {
+              console.error("Error al cerrar sesión", error);
+              Alert.alert('Error', 'Hubo un problema al cerrar la sesión.');
+            }
+          }
+        }
+      ],
+      { cancelable: false }
+    );
   };
 
   return {

@@ -1,22 +1,29 @@
 import { useState, useEffect } from 'react';
+import Constants from 'expo-constants';
 
 const useCryptoData = () => {
     const [selectedDays, setSelectedDays] = useState('5');
     const [selectedSymbol, setSelectedSymbol] = useState('ETH');
     const [cryptoOptions, setCryptoOptions] = useState([]);
 
+    const API_URL = Constants.expoConfig.extra.API_URL;
+
     useEffect(() => {
         const fetchCryptos = async () => {
             try {
-                const response = await fetch('http://25.56.145.23:8000/cryptos/todas');
+                const response = await fetch(`${API_URL}/cryptos/todas`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch cryptocurrency list');
                 }
                 const json = await response.json();
+                
+                // --- CAMBIO CLAVE AQUÍ ---
                 const formattedOptions = json.map(item => ({
-                    label: item.symbol, 
-                    value: item.symbol,
+                    label: `${item.nombre} (${item.simbolo})`, // Muestra el nombre ("Bitcoin")
+                    value: item.simbolo, // Usa el símbolo como valor ("BTC")
                 }));
+                // -------------------------
+                
                 setCryptoOptions(formattedOptions);
                 // Si la lista de criptos se carga, establece el primer símbolo como el seleccionado por defecto
                 if (formattedOptions.length > 0) {
@@ -37,13 +44,6 @@ const useCryptoData = () => {
         { label: '5 Meses', value: '150' },
     ];
 
-    const menuOptions = [
-        { label: 'Ir a login', action: () => alert('Ir a login') },
-        { label: 'Ir a Registro', action: () => alert('Ir a Registro') },
-        { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
-        { label: 'Contacto', action: () => alert('Contacto de soporte') },
-    ];
-
     return {
         selectedDays,
         setSelectedDays,
@@ -51,7 +51,6 @@ const useCryptoData = () => {
         setSelectedSymbol,
         cryptoOptions,
         timeOptions,
-        menuOptions,
     };
 };
 

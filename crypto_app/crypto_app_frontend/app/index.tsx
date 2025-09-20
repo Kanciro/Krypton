@@ -17,19 +17,13 @@ const SplashScreen = () => {
         setSelectedSymbol,
         cryptoOptions,
         timeOptions,
-        menuOptions,
     } = useCryptoData();
 
-    // Actualiza las acciones de los botones del menú para usar 'router'
-    const updatedMenuOptions = menuOptions.map(option => {
-        if (option.label === 'Ir a login') {
-            return { ...option, action: () => router.push('/screens/login') };
-        }
-        if (option.label === 'Ir a Registro') {
-            return { ...option, action: () => router.push('/screens/register') };
-        }
-        return option;
-    });
+    const menuOptions = [
+        { label: 'Gestionar Usuario', action: () => router.push('/screens/user') },
+        { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
+        { label: 'Contacto', action: () => alert('Contacto de soporte') },
+    ];
 
     return (
         <View style={styles.container}>
@@ -70,7 +64,7 @@ const SplashScreen = () => {
             
             {/* Componente del gráfico */}
             <CandlestickChartComponent symbol={selectedSymbol} days={selectedDays} />
-            <MenuModal options={updatedMenuOptions} />
+            <MenuModal options={menuOptions} />
         </View>
     );
 };

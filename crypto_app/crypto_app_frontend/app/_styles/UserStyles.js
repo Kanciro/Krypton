@@ -1,21 +1,26 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
+  main: {
+    flex: 1,
+    backgroundColor: '#000042',
+  },
   container: {
     flexGrow: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#000042',
+    paddingBottom: 100,
   },
   greeting: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffffff',
     textAlign: 'center',
     marginBottom: 10,
   },
   info: {
     fontSize: 16,
-    color: '#666',
+    color: '#ffffffff',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -32,7 +37,7 @@ const styles = StyleSheet.create({
     color: '#0000ff',
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: '#7600A9',
     borderRadius: 10,
     padding: 20,
     marginBottom: 20,
@@ -45,20 +50,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#444',
+    color: '#ffffffff',
     marginBottom: 15,
   },
   input: {
     height: 50,
-    borderColor: '#ccc',
+    borderColor: '#000099',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#000099',
   },
   button: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#00DBC3',
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
@@ -74,17 +79,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   deactivateButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#ff0000e5',
     flex: 1,
     marginRight: 5,
   },
   reactivateButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#00DBC3',
     flex: 1,
     marginLeft: 5,
   },
   logoutBtn: {
-    backgroundColor: '#333',
+    backgroundColor: '#00DBC3',
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',

@@ -37,6 +37,7 @@ export function useLogin() {
       if (response.ok) {
         Alert.alert('Éxito', '¡Inicio de sesión exitoso!');
         
+        // Almacena el token de acceso para el usuario registrado.
         await AsyncStorage.setItem('access_token', data.access_token);
         await AsyncStorage.setItem('nombre_usuario', usuario);
         
@@ -45,7 +46,7 @@ export function useLogin() {
         
         router.replace('../screens/usuario'); 
       } else {
-        Alert.alert('Error', data.detail ||  'Credenciales incorrectas. Verifique su usuario y contraseña.');
+        Alert.alert('Error', data.detail || 'Credenciales incorrectas. Verifique su usuario y contraseña.');
       }
     } catch (error) {
       console.error('Error en la autenticación:', error);
@@ -67,6 +68,8 @@ export function useLogin() {
 
       if (response.ok) {
         Alert.alert('Éxito', '¡Has iniciado sesión como invitado!');
+        // Almacena un token de invitado para diferenciar la sesión.
+        await AsyncStorage.setItem('guest_token', 'true'); 
         router.replace('/'); 
       } else {
         Alert.alert('Error', 'No se pudo iniciar sesión como invitado.');

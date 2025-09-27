@@ -1,7 +1,7 @@
 # modelo_valor_fiat.py
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Numeric, Integer, String, DateTime, ForeignKey
 from ..database.db import Base
 from sqlalchemy.orm import relationship
 
@@ -11,9 +11,9 @@ from sqlalchemy.orm import relationship
 
 
 class ValorFiat(Base):
-    __tablename__ = "valores_fiat"
+    __tablename__ = "valor_fiat"
 
-    id_moneda_fiat = Column(
+    id_moneda = Column(
         Integer, ForeignKey("moneda_fiat.id_moneda"), nullable=False
     )
     id_valor_historico = Column(
@@ -21,7 +21,7 @@ class ValorFiat(Base):
     )
 
     id_valor_fiat = Column(Integer, primary_key=True, index=True)
-    valor = Column(String(50), nullable=False)
+    valor = Column(Numeric(18,8), nullable=False)
     fecha = Column(DateTime, default=datetime.utcnow)
     hora = Column(DateTime, default=datetime.utcnow)
 

@@ -1,76 +1,81 @@
 import requests
 import logging
 from datetime import datetime, timedelta
+from typing import List, Dict, Any
 
-# TODO: Reemplaza con tu clave de API de ExchangeRate-API
-API_KEY = "2c9506b4f77d85a2233fce27"
-BASE_URL = "https://open.er-api.com/v6/historical"
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel
 
-# Configuración b\u00e1sica de logging
+# URLs y configuraci\u00f3n b\u00e1sica de logging
+BASE_URL = "https://api.coingecko.com/api/v3/coins"
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def obtener_valores_fiat_historicos(moneda_base: str, moneda_target: str, dias: int) -> list:
-    """
-    Obtiene los valores hist\u00f3ricos de una moneda fiat en relaci\u00f3n a otra desde la API.
+# Lista de IDs de criptomonedas obtenidas de las im\u00e1genes
+# Aseg\u00farate de que estos IDs son correctos para la API de CoinGecko
+CRIPTOMONEDAS_IDS = [
+    "bitcoin", "ethereum", "ripple", "tether", "binancecoin",
+    "solana", "usd-coin", "staked-ether", "dogecoin", "tron",
+    "cardano", "wrapped-steth", "chainlink", "wrapped-beacon-eth",
+    "hyperliquid", "wrapped-bitcoin", "wrapped-eeth", "sui", "stellar",
+    "ethena-usde", "figure-heloc", "avalanche-2", "bitcoin-cash", "weth",
+    "hedera-hashgraph", "leo-token", "usds", "litecoin", "binance-bridged-usdt-bnb-smart-chain",
+    "shiba-inu", "the-open-network", "crypto-com-chain", "coinbase-wrapped-btc",
+    "polkadot", "whitebit", "ethena-staked-usde", "mantle", "world-liberty-financial",
+    "monero", "usdt0"
+]
 
-    Args:
-        moneda_base (str): El c\u00f3digo de la moneda base (ej. 'USD').
-        moneda_target (str): El c\u00f3digo de la moneda objetivo (ej. 'COP').
-        dias (int): El n\u00famero de d\u00edas de datos hist\u00f3ricos a obtener.
+app = FastAPI()
 
-    Returns:
-        list: Una lista de diccionarios con los valores formateados, o una lista vac\u00eda si hay un error.
+async def obtener_valores_historicos_por_cripto_y_fiats(crypto_id: str, monedas_fiat: List[str], dias: int) -> Dict[str, Any]:
     """
-    fechas_a_obtener = []
-    fecha_fin = datetime.now().date()
-    for i in range(dias + 1):
-        fechas_a_obtener.append(fecha_fin - timedelta(days=i))
+    Obtiene los valores hist\u00f3ricos de una criptomoneda en relaci\u00f3n a una lista de monedas fiat.
     
-    # Invertimos la lista para obtener los datos en orden cronol\u00f3gico (de m\u00e1s antiguo a m\u00e1s reciente)
-    fechas_a_obtener.reverse()
-
-    datos_fiat = []
-
-    for fecha in fechas_a_obtener:
-        fecha_str = fecha.strftime("%Y-%m-%d")
-        url = f"{BASE_URL}/{fecha_str}/{moneda_base}"
+    Args:
+        crypto_id (str): El ID de la criptomoneda (ej. 'bitcoin').
+        monedas_fiat (List[str]): Una lista de c\u00f3digos de monedas objetivo (ej. ['usd', 'eur']).
+        dias (int): El n\u00famero de d\u00edas de datos hist\u00f3ricos a obtener.
+    
+    Returns:
+        Dict[str, Any]: Un diccionario con los datos formateados.
+    """
+    if crypto_id not in CRIPTOMONEDAS_IDS:
+        raise HTTPException(status_code=404, detail="La criptomoneda no es v\u00e1lida o no se encuentra en la lista.")
+    
+    datos_historicos_completos = {crypto_id: {}}
+    
+    for moneda_target in monedas_fiat:
+        url = f"{BASE_URL}/{crypto_id}/market_chart"
+        params = {
+            "vs_currency": moneda_target,
+            "days": dias
+        }
         
         try:
-            response = requests.get(url)
+            response = requests.get(url, params=params)
             response.raise_for_status()
             data = response.json()
+            
+            if "prices" in data:
+                # Si es la primera moneda fiat, inicializamos la estructura
+                if moneda_target == monedas_fiat[0]:
+                    datos_historicos_completos[crypto_id] = {
+                        "monedas": {},
+                        "fechas": []
+                    }
+                    for timestamp, _ in data["prices"]:
+                        fecha = datetime.fromtimestamp(timestamp / 1000).strftime("%Y-%m-%d")
+                        datos_historicos_completos[crypto_id]["fechas"].append(fecha)
 
-            if data.get("result") == "success" and data["rates"].get(moneda_target):
-                valor_cambio = data["rates"][moneda_target]
+                # Guardamos los precios para la moneda actual
+                precios_actuales = [precio for _, precio in data["prices"]]
+                datos_historicos_completos[crypto_id]["monedas"][moneda_target] = precios_actuales
                 
-                # Preparamos el diccionario con los datos necesarios para la tabla valor_fiat
-                datos_fiat.append({
-                    "fecha": fecha_str,
-                    "valor": str(valor_cambio), # Se guarda como string para coincidir con el modelo de DB
-                    "moneda_target": moneda_target
-                })
-                logger.info(f"Datos obtenidos para {moneda_base}/{moneda_target} en la fecha {fecha_str}.")
+                logger.info(f"Datos obtenidos para {crypto_id} en {moneda_target} para {dias} d\u00edas.")
             else:
-                logger.warning(f"No se encontraron datos para {moneda_target} en la fecha {fecha_str}.")
+                logger.warning(f"No se encontraron datos de precios para {crypto_id} en {moneda_target}.")
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error al obtener datos hist\u00f3ricos para {fecha_str}: {e}")
-            continue # Continuamos con la siguiente fecha incluso si una falla
-
-    return datos_fiat
-
-if __name__ == "__main__":
-    logger.info("Iniciando la prueba del servicio de datos fiat...")
-    
-    moneda_base = "USD"
-    moneda_target = "COP" # O cualquier otra moneda que desees probar
-    dias = 7 
-    
-    datos_historicos = obtener_valores_fiat_historicos(moneda_base, moneda_target, dias)
-    
-    if datos_historicos:
-        logger.info(f"Se obtuvieron {len(datos_historicos)} registros.")
-        for dato in datos_historicos:
-            print(f"Fecha: {dato['fecha']}, Valor: {dato['valor']} {moneda_target}")
-    else:
-        logger.warning("No se obtuvieron datos hist\u00f3ricos. Revisa la conexi\u00f3n o tu API Key.")
+            logger.error(f"Error al obtener datos hist\u00f3ricos: {e}")
+            continue
+            
+    return datos_historicos_completos

@@ -10,20 +10,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas, traerCriptomonedas
 from servicio_usuarios.schemas.schema_criptomonedas import CriptomonedaSchema  
 from servicio_datos_cripto.services.crypto_data_id_service import ObtenerValorPorSimbolo
+from servicio_datos_cripto.services.fiat_data_id_services import ObtenerValorFiatPorSimbolo
 # Importa la función actualizada
 from servicio_datos_cripto.services.crypto_sync_service import actualizar_criptomonedas_en_db
-from servicio_datos_cripto.services.fiat_data_service import  traerMonedasFiat
+from servicio_datos_cripto.services.fiat_data_service import traerMonedasFiat 
+from servicio_datos_cripto.services.valor_fiat_data_service import obtener_valores_historicos_por_cripto_y_fiats
 from servicio_usuarios.services.user_data_services import RegistrarUsuario, hashContraseña
+from servicio_usuarios.schemas.schema_valor_fiat import ValorFiatSchema
 from servicio_usuarios.schemas.schema_users import (
     UsuarioCrear,
     UsuarioBase as UsuarioSchema, 
     UsuarioActualizar, 
     VerificacionCodigo
 )
+from servicio_usuarios.models.modelo_moneda_fiat import MonedaFiat
 from jose import jwt, JWTError
 from servicio_usuarios.services.auth.auth_utils import get_current_user
 from servicio_usuarios.services.email_services.email_sender import send_verification_email, send_registration_email_with_code
 from servicio_usuarios.schemas.schema_guest import InvitadoResponse
+from servicio_datos_cripto.services.valor_fiat_sync_service import guardar_valores_fiat_en_db
 import random
 import string
 from servicio_usuarios.services.user_enquiry_services import registrarConsultaUsuario
@@ -163,6 +168,7 @@ async def leer_historico_por_simbolo(
         raise HTTPException(status_code=404, detail="Criptomoneda no encontrada.")
 
     return valores_historicos
+
 @app.get("/fiat/all", response_model=List[MonedaFiatSchema], status_code=200)
 def obtener_todas_las_monedas_fiat(db: Session = Depends(get_db)):
     try:
@@ -170,18 +176,68 @@ def obtener_todas_las_monedas_fiat(db: Session = Depends(get_db)):
         return all_fiat
     except HTTPException as e:
         raise e
-         
+    
+@app.get(
+    "/api/v1/moneda_fiat/history/by_symbol/{simbolo_moneda}",
+    response_model=List[ValorFiatSchema],
+    status_code=200
+)
+async def leer_historico_por_simbolo_fiat(
+    simbolo_moneda: str = Path(..., description="Símbolo de la moneda fiat (ej. 'USD', 'EUR')", example="EUR"),
+    dias: int = Query(30, ge=1, description="Número de días hacia atrás a filtrar", example=30),
+    simbolo_cripto: Optional[str] = Query(None, description="Símbolo de la criptomoneda para filtrar (ej. 'BTC', 'ETH')", example="BTC"),
+    db: Session = Depends(get_db)
+):
+    valores_historicos_fiat = ObtenerValorFiatPorSimbolo(db, simbolo_moneda, dias, simbolo_cripto)
+
+    if not valores_historicos_fiat:
+        raise HTTPException(status_code=404, detail="Moneda fiat no encontrada, o sin datos históricos para los filtros aplicados.")
+
+    return valores_historicos_fiat
 """
-@app.get("/api/v1/cryptocurrencies/popular/monedas_fiat/popular")
-async def leerMonedasFiat():
-    fiats = traerTopMonedasFiat()
-    if fiats is None:
+@app.get("/api/v1/cryptocurrencies/{crypto_id}/historical-data")
+async def leer_datos_historicos(
+    crypto_id: str,
+    monedas_fiat: List[str] = Query(..., description="Lista de c\u00f3digos de monedas fiat (ej. usd, eur, cop)", example=["usd", "eur"]),
+    dias: int = Query(30, ge=1, description="N\u00famero de d\u00edas hist\u00f3ricos a obtener", example=30)
+):
+
+    datos = await obtener_valores_historicos_por_cripto_y_fiats(crypto_id, monedas_fiat, dias)
+    if not datos or not datos.get(crypto_id):
         raise HTTPException(
             status_code=500,
-            detail="No se pudieron obtener los datos de las monedas fiat.",
+            detail=f"No se pudieron obtener los datos hist\u00f3ricos para {crypto_id}.",
         )
-    return fiats
+    return datos
+
 """
+
+@app.get("/api/v1/cryptocurrencies/{crypto_id}/historical-data")
+async def leer_y_guardar_datos_historicos(
+    crypto_id: str,
+    monedas_fiat: List[str] = Query(..., description="Lista de c\u00f3digos de monedas fiat (ej. usd, eur, cop)", example=["usd", "eur"]),
+    dias: int = Query(30, ge=1, description="N\u00famero de d\u00edas hist\u00f3ricos a obtener", example=30),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene los datos hist\u00f3ricos de una criptomoneda y los guarda en la base de datos.
+    """
+    datos = await obtener_valores_historicos_por_cripto_y_fiats(crypto_id, monedas_fiat, dias)
+    
+    if not datos or not datos.get(crypto_id):
+        raise HTTPException(
+            status_code=500,
+            detail=f"No se pudieron obtener los datos hist\u00f3ricos para {crypto_id}.",
+        )
+    
+    guardado_exitoso = guardar_valores_fiat_en_db(db, crypto_id, datos)
+    
+    return {"datos_api": datos, "estado_guardado": guardado_exitoso["mensaje"]}
+
+
+
+
+
 """
 @app.get("/api/v1/cryptocurrencies/popular/monedas_fiat/popular/base_de_datos")
 async def leerMonedasFiatConBD(db: Session = Depends(get_db)):
@@ -238,16 +294,16 @@ def verificar_codigo(data: VerificacionCodigo, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).filter(Usuario.correo == data.correo).first()
     
     # Check if user exists and the code matches
-    if not usuario or usuario.codigo_verificacion != data.codigo:
+    if usuario is None or usuario.codigo_verificacion != data.codigo: # pyright: ignore[reportGeneralTypeIssues]
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Código o correo incorrecto.",
         )
     
     # Activate the user account
-    usuario.is_verified = True
-    usuario.is_active = True
-    usuario.codigo_verificacion = None  # Clear the code after use
+    usuario.is_verified = True # type: ignore
+    usuario.is_active = True # type: ignore
+    usuario.codigo_verificacion = None  # type: ignore # Clear the code after use
     db.commit()
     db.refresh(usuario)
     
@@ -435,7 +491,7 @@ def LeerValorHistorico(crypto_id: str, days: int):
     return result
 """
 
-"""
+
 @app.get("/api/v1/cryptocurrencies/history/{crypto_id_api}/db")
 def CargarHistoricoDesdeDb(crypto_id: str, days: int, db: Session = Depends(get_db)):
     from servicio_datos_cripto.services.historical_crypto_sync_services import ActualizarValorHistoricoConDb
@@ -443,7 +499,7 @@ def CargarHistoricoDesdeDb(crypto_id: str, days: int, db: Session = Depends(get_
     if result is None:
         raise HTTPException(status_code=500, detail="Error al cargar los datos históricos desde la base de datos.")
     return result
-"""
+
 @app.post("/guests/interact", status_code=status.HTTP_201_CREATED)
 def registrar_interaccion_invitado_endpoint(
     request: Request,

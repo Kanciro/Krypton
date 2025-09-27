@@ -38,7 +38,11 @@ pydantic_core==2.33.2
 pyflakes==3.4.0
 Pygments==2.19.2
 pytest==8.4.1
+pytest-asyncio==0.23.6
 pytest-mock==3.14.1
+pytest-tornasync==0.7.0
+pytest-trio==0.8.0
+pytest-twisted==1.11.0
 python-dotenv==1.1.1
 python-jose==3.5.0
 pytz==2025.2

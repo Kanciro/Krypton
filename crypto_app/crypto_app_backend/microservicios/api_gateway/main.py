@@ -50,6 +50,8 @@ from servicio_usuarios.schemas.schema_usuario_login import TokenSchema
 from servicio_usuarios.services.user_enter_services import LoginUsuarioSeguro
 from servicio_usuarios.services.auth.auth_utils import SECRET_KEY, ALGORITHM
 from servicio_usuarios.schemas.schema_recuperar_contraseña import EmailRequest, PasswordReset  
+from servicio_noticias.services.news_services import fetch_and_insert_news
+from servicio_noticias.services.news_data_services import TraerNoticias 
 
 # Configuración básica de logging
 logging.basicConfig(level=logging.INFO)
@@ -525,6 +527,16 @@ def registrar_interaccion_invitado_endpoint(
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+
+@app.get("/noticias/", response_model=list[dict])  # Puedes usar un Pydantic model para tipado
+def read_all_news(db: Session = Depends(get_db)):
+    """
+    Endpoint que devuelve una lista de todas las noticias de la base de datos.
+    """
+    news_list = TraerNoticias(db)
+    # Convertir los objetos de SQLAlchemy a diccionarios para que sean serializables
+    return [{"id_noticias": n.id_noticias, "titulo": n.titulo, "url": n.url, "contenido": n.contenido} for n in news_list]
 
 
 @app.post("/users/consultas", status_code=status.HTTP_201_CREATED)
@@ -553,6 +565,24 @@ def registrar_consulta(
         )
     
 
+
+@app.get("/fetch_and_insert_news")
+def trigger_news_update(db: Session = Depends(get_db)):
+    """
+    Endpoint que obtiene noticias de criptomonedas y las guarda en la base de datos.
+    
+    Este endpoint se encarga de:
+    1. Conectar con la API de CryptoCompare.
+    2. Procesar las noticias obtenidas.
+    3. Insertar las noticias nuevas en la base de datos.
+    """
+    try:
+        # Llamar a la función que ya creamos.
+        # Le pasamos la sesión de la base de datos y el idioma.
+        fetch_and_insert_news(db=db, lang='ES') 
+        return {"message": "Las noticias se han actualizado correctamente."}
+    except Exception as e:
+        return {"error": f"Ocurrió un error al actualizar las noticias: {e}"}
 
 @app.websocket("/ws/cryptocurrencies")
 async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):

@@ -20,6 +20,7 @@ const SplashScreen = () => {
     } = useCryptoData();
 
     const menuOptions = [
+        { label: 'Noticias', action: () => router.push('/screens/news') },
         { label: 'Gestionar Usuario', action: () => router.push('/screens/user') },
         { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
         { label: 'Contacto', action: () => alert('Contacto de soporte') },

@@ -19,6 +19,5 @@ class Criptomoneda(Base):
     alertas_personalizadas = relationship("AlertaPersonalizada", back_populates="criptomoneda")
     calculadoras_de_divisas = relationship("CalculadoraDeDivisas", back_populates="criptomoneda")
     consultas_usuario = relationship("ConsultasUsuario", back_populates="criptomoneda")
-    noticias = relationship("Noticia", back_populates="cripto") 
     valor_historico = relationship("ValorHistorico", back_populates="criptomoneda")
     interacciones_invitados = relationship("InteraccionInvitado", back_populates="criptomoneda")

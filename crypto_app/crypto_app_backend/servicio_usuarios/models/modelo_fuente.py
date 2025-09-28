@@ -8,7 +8,7 @@ from ..database.db import Base
 
 class Fuente(Base):
     # Corrección: Nombre de la tabla en minúsculas
-    __tablename__ = "fuentes"
+    __tablename__ = "fuente"
 
     id_fuente = Column(Integer, primary_key=True, index=True)
     fuente = Column(String(100), unique=True, nullable=False)

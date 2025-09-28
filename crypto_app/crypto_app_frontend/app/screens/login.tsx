@@ -1,104 +1,80 @@
-import { Background } from '@react-navigation/elements';
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground } from 'react-native';
+import React from 'react';
+import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import styles from '../_styles/LoginStyles';
+import Header from '../_components/header';
+import MenuModal from '../_components/MenuModal';
+import { useLogin } from '../_services/LoginLogic';
 
 export default function LoginScreen() {
-  const [usuario, setUsuario] = useState('');
-  const [contrasena, setContrasena] = useState('');
+  const {
+    usuario,
+    setUsuario,
+    contrasena,
+    setContrasena,
+    handleLogin,
+    isLoading,
+    handleGuestLogin,
+  } = useLogin();
 
-  const handleLogin = () => {
-    // Aquí puedes agregar la lógica para autenticar al usuario
-    // Por ejemplo, enviar 'usuario' y 'contrasena' a una API.
-    console.log('Iniciando sesión con:', usuario, contrasena);
-  };
+  const menuOptions = [
+    { label: 'Ir a Inicio', action: () => router.push('/') },
+    { label: 'Ir a Registro', action: () => router.push('/screens/register') },
+    { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
+    { label: 'Contacto', action: () => alert('Contacto de soporte') },
+    { label: 'Verificar', action: () => router.push('/screens/verify_email') },
+  ];
 
   return (
-      <View style={styles.container}>
-        <Text style={styles.logo}>KRYPTON</Text>
-
-        <View style={styles.inputView}>
+    <View style={styles.main}>
+      <Header />
+      <KeyboardAvoidingView
+        style={styles.contentContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.container}>
+          <Text style={styles.title}>Login</Text>
           <TextInput
             style={styles.inputText}
             placeholder="Usuario"
             placeholderTextColor="#fff"
-            onChangeText={text => setUsuario(text)}
+            onChangeText={setUsuario}
+            value={usuario}
+            autoCapitalize="none"
+            autoFocus={true}
           />
-        </View>
-        <View style={styles.inputView}>
           <TextInput
             secureTextEntry
             style={styles.inputText}
             placeholder="Contraseña"
             placeholderTextColor="#fff"
-            onChangeText={text => setContrasena(text)}
+            onChangeText={setContrasena}
+            value={contrasena}
+            autoCapitalize="none"
           />
+          <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.loginText}>INICIAR SESIÓN</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => console.log('Olvidó su contraseña sjsjsjsjsjs pinche pendejo XD')}>
+            <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-          <Text style={styles.loginText}>INICIAR SESIÓN</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-          <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity>
-          <Text style={styles.register}>¿No tienes cuenta? Regístrate</Text>
-        </TouchableOpacity>
-
-      </View>
-
+        <View style={styles.SubContainer}>
+          <Text style={styles.register_text}>¿No tienes cuenta?</Text>
+          <TouchableOpacity onPress={() => router.push('/screens/register')}>
+            <Text style={styles.register}>Regístrate</Text>
+          </TouchableOpacity>
+          <Text style={styles.register_text}>o</Text>
+          <TouchableOpacity onPress={handleGuestLogin} disabled={isLoading}>
+            <Text style={styles.register}>continua como invitado</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+      <MenuModal options={menuOptions} />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)', // Un fondo oscuro semi-transparente para que el texto resalte
-  },
-  logo: {
-    fontWeight: 'bold',
-    fontSize: 50,
-    color: '#fff',
-    marginBottom: 40,
-  },
-  inputView: {
-    width: '80%',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 25,
-    height: 50,
-    marginBottom: 20,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  inputText: {
-    height: 50,
-    color: 'white',
-  },
-  loginBtn: {
-    width: '80%',
-    backgroundColor: '#008b8b', // Un color similar al verde aguamarina de la imagen
-    borderRadius: 25,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 40,
-    marginBottom: 10,
-  },
-  loginText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  forgot: {
-    color: 'white',
-    fontSize: 12,
-  },
-  register: {
-    color: 'white',
-    marginTop: 15,
-    fontSize: 14,
-  },
-});

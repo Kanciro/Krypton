@@ -55,3 +55,13 @@ class UsuarioActualizar(BaseModel):
     correo: Optional[EmailStr] = None
     fecha_nacimiento: Optional[date] = None
     contraseña: Optional[str] = None
+
+class VerificacionCodigo(BaseModel):
+    correo: EmailStr
+    codigo: str
+
+    @validator('codigo')
+    def codigo_length(cls, v):
+        if len(v) != 4 or not v.isdigit():
+            raise ValueError('El código debe ser un número de 4 dígitos')
+        return v

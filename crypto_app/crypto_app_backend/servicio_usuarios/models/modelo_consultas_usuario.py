@@ -22,3 +22,4 @@ class ConsultasUsuario(Base):
     criptomoneda = relationship("Criptomoneda", back_populates="consultas_usuario")
     usuario = relationship("Usuario", back_populates="consultas_usuario")
     moneda_fiat = relationship("MonedaFiat", back_populates="consultas_usuario")
+    

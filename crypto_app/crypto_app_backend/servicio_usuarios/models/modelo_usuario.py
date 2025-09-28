@@ -24,3 +24,4 @@ class Usuario(Base):
         "AlertaPersonalizada", back_populates="usuario"
     )
     consultas_usuario = relationship("ConsultasUsuario", back_populates="usuario")
+    consultas_noticias = relationship("ConsultaNoticias", back_populates="usuario")

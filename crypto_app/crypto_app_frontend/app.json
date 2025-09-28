@@ -38,6 +38,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "API_URL": "http://25.56.145.23:8000"
     }
   }
 }

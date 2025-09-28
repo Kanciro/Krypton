@@ -15,6 +15,7 @@ import servicio_usuarios.models.modelo_valor_fiat
 import servicio_usuarios.models.modelo_valor_historico
 import servicio_usuarios.models.modelo_invitados
 import servicio_usuarios.models.modelo_interacciones_invitados
+import servicio_usuarios.models.modelo_consulta_noticas
 
 mapper_registry = registry()
 mapper_registry.configure()

@@ -73,6 +73,14 @@ export default function RootLayout() {
           name="screens/news"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="screens/newsDetail"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screens/conversion"
+          options={{ headerShown: false }}
+        />
       </Stack>
     </GestureHandlerRootView>
   );

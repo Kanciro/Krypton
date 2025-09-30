@@ -1,5 +1,3 @@
-// news.tsx (Refactorizado)
-
 import React from 'react';
 import { Text, View, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router'; 
@@ -31,6 +29,8 @@ const NewsScreen = () => {
 
     const menuOptions = [
         { label: 'Gestionar Usuario', action: () => router.push('/screens/user') },
+        { label: 'Conversión de Monedas', action: () => router.push('/screens/conversion') },
+        { label: 'Inicio', action: () => router.push('/') },
         { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
         { label: 'Contacto', action: () => alert('Contacto de soporte') },
     ];

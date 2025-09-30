@@ -6,10 +6,9 @@ import { Picker } from '@react-native-picker/picker';
 import styles from './_styles/IndexStyles';
 import MenuModal from './_components/MenuModal';
 import { router } from 'expo-router';
-import useCryptoData from './_services/IndexLogic'; // Importa el hook personalizado
+import useCryptoData from './_services/IndexLogic';
 
 const SplashScreen = () => {
-    // Usa el hook para obtener todos los datos y funciones necesarios
     const {
         selectedDays,
         setSelectedDays,
@@ -22,6 +21,7 @@ const SplashScreen = () => {
     const menuOptions = [
         { label: 'Noticias', action: () => router.push('/screens/news') },
         { label: 'Gestionar Usuario', action: () => router.push('/screens/user') },
+        { label: 'Conversión de criptomonedas', action: () => router.push('/screens/conversion') },
         { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
         { label: 'Contacto', action: () => alert('Contacto de soporte') },
     ];

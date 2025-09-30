@@ -25,7 +25,8 @@ export default function UsuarioScreen() {
 
   const menuOptions = [
     { label: 'Ir a Inicio', action: () => router.push('/') },
-    { label: 'Ir a Registro', action: () => router.push('/screens/register') },
+    { label: 'Noticias', action: () => router.push('/screens/news') },
+    { label: 'Conversión de Monedas', action: () => router.push('/screens/conversion') },
     { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
     { label: 'Contacto', action: () => alert('Contacto de soporte') },
   ];

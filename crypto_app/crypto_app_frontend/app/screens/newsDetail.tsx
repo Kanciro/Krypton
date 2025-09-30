@@ -2,33 +2,36 @@ import React from 'react';
 import { View, Text, ScrollView, Linking, Button, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import Header from '../_components/header';
+import MenuModal from '../_components/MenuModal';
 
 const NewsDetailScreen = () => {
-    // Obtiene los parámetros pasados desde la tarjeta
     const params = useLocalSearchParams();
     const { titulo, contenido, url } = params;
 
-    // Puedes manejar la navegación de regreso
-    const handleGoBack = () => {
-        router.back();
-    };
+    const menuOptions = [
+        { label: 'Gestionar Usuario', action: () => router.push('/screens/user') },
+        { label: 'Conversión de Monedas', action: () => router.push('/screens/conversion') },
+        { label: 'Inicio', action: () => router.push('/') },
+        { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
+        { label: 'Contacto', action: () => alert('Contacto de soporte') },
+    ];
 
     return (
         <View style={detailStyles.container}>
-            <Header showBackButton={true} onBackPress={handleGoBack} />
-            <ScrollView style={detailStyles.scrollView}>
-                <Text style={detailStyles.title}>{titulo}</Text>
-                
-                <Text style={detailStyles.content}>{contenido}</Text>
-
-                {url && (
-                    <Button 
-                        title="Ver Fuente Original" 
-                        onPress={() => Linking.openURL(url as string)} 
-                        color="#00DBC3"
-                    />
-                )}
-            </ScrollView>
+            <Header/>
+                <ScrollView style={detailStyles.scrollView}>
+                    <Text style={detailStyles.title}>{titulo}</Text>
+                    <Text style={detailStyles.content}>{contenido}</Text>
+        
+                    {url && (
+                        <Button 
+                            title="Ver Fuente Original" 
+                            onPress={() => Linking.openURL(url as string)} 
+                            color="#00DBC3"
+                        />
+                    )}
+                </ScrollView>
+            <MenuModal options={menuOptions} />
         </View>
     );
 };

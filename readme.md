@@ -10,6 +10,7 @@ crypto_app/
 │   ├── servicio_conversion/
 │   ├── servicio_datos_cripto/
 │   └── servicio_usuarios/
+├── ├── servicio_alertas_personalizadas/
 ├── entorno_virtual/
 ├── .gitkeep
 ├── readme.md

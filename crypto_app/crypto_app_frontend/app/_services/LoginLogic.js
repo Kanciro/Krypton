@@ -17,7 +17,7 @@ export function useLogin() {
       Alert.alert('Error', 'Por favor, ingrese su usuario y contraseña.');
       return;
     }
-    
+
     setIsLoading(true);
 
     try {
@@ -33,18 +33,16 @@ export function useLogin() {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         Alert.alert('Éxito', '¡Inicio de sesión exitoso!');
-        
-        // Almacena el token de acceso para el usuario registrado.
+    
+        // Almacena el token de acceso y limpia el token de invitado
         await AsyncStorage.setItem('access_token', data.access_token);
         await AsyncStorage.setItem('nombre_usuario', usuario);
-        
-        console.log('Token de acceso:', data.access_token);
-        console.log('Usuario logeado:', usuario);
-        
-        router.replace('../screens/usuario'); 
+        await AsyncStorage.removeItem('guest_token'); // <-- Limpiar token de invitado
+    
+        router.replace('/'); // Estandarizado a ruta absoluta
       } else {
         Alert.alert('Error', data.detail || 'Credenciales incorrectas. Verifique su usuario y contraseña.');
       }
@@ -68,8 +66,11 @@ export function useLogin() {
 
       if (response.ok) {
         Alert.alert('Éxito', '¡Has iniciado sesión como invitado!');
-        // Almacena un token de invitado para diferenciar la sesión.
+        // Almacena un token de invitado y limpia tokens de usuario.
         await AsyncStorage.setItem('guest_token', 'true'); 
+        await AsyncStorage.removeItem('access_token');
+        await AsyncStorage.removeItem('nombre_usuario');
+    
         router.replace('/'); 
       } else {
         Alert.alert('Error', 'No se pudo iniciar sesión como invitado.');

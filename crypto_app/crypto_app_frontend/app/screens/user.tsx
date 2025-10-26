@@ -21,27 +21,30 @@ export default function UsuarioScreen() {
     handleLogout,
     message,
     isLoading,
+    bottomSheetRef, // <-- Desestructurado del hook
+    handleOpenMenu, // <-- Desestructurado del hook
   } = UserLogic();
 
+  // Cerrar el menú después de navegar
   const menuOptions = [
-    { label: 'Ir a Inicio', action: () => router.push('/') },
-    { label: 'Noticias', action: () => router.push('/screens/news') },
-    { label: 'Conversión de Monedas', action: () => router.push('/screens/conversion') },
-    { label: 'Acerca de', action: () => alert('Info sobre Krypton') },
-    { label: 'Contacto', action: () => alert('Contacto de soporte') },
+    { label: 'Ir a Inicio', action: () =>  router.push('/')},
+    { label: 'Noticias', action: () =>  router.push('/screens/news')},
+    { label: 'Conversión de Monedas', action: () =>  router.push('/screens/conversion')},
+    { label: 'Acerca de', action: () => Alert.alert('Info', 'Información sobre Krypton')},
+    { label: 'Contacto', action: () => Alert.alert('Contacto', 'Contacto de soporte')},
   ];
 
-  return (
-    <View style={styles.main}> 
-    <Header />
-      <ScrollView contentContainerStyle={styles.container}>
-        
-        <Text style={styles.greeting}>
-          ¡Bienvenido, {nombreUsuario}! 👋
-        </Text>
-        <Text style={styles.info}>
-          Gestiona tu perfil de usuario.
-        </Text>
+return (
+  <View style={styles.main}> 
+  <Header onMenuPress={handleOpenMenu} /> {/* <-- Se pasa el handler para abrir el menú */}
+    <ScrollView contentContainerStyle={styles.container}>
+  
+      <Text style={styles.greeting}>
+        ¡Bienvenido, {nombreUsuario}! 👋
+      </Text>
+      <Text style={styles.info}>
+        Gestiona tu perfil de usuario.
+      </Text>
 
       {/* Mensajes de estado */}
       {message && (
@@ -164,7 +167,7 @@ export default function UsuarioScreen() {
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </ScrollView>
-      <MenuModal options={menuOptions}/>
+      <MenuModal options={menuOptions} bottomSheetRef={bottomSheetRef}/> {/* <-- Se pasa la ref al MenuModal */}
     </View>
   );
 }

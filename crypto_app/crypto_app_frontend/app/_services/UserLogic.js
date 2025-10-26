@@ -1,5 +1,4 @@
-// UserLogic.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; 
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
@@ -18,6 +17,7 @@ export function UserLogic() {
   });
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const bottomSheetRef = useRef(null); // Referencia para controlar el MenuModal
 
   // URL base de la API, obtenida de app.json
   const API_URL = 'http://25.56.145.23:8000';
@@ -26,10 +26,12 @@ export function UserLogic() {
     const obtenerNombreUsuario = async () => {
       try {
         const nombreGuardado = await AsyncStorage.getItem('nombre_usuario');
-        if (nombreGuardado) {
-          setNombreUsuario(nombreGuardado);
+        const isGuest = await AsyncStorage.getItem('guest_token');
+
+        if (nombreGuardado || isGuest) { // Permite la navegación si es invitado o usuario registrado
+          setNombreUsuario(nombreGuardado || 'Invitado'); // Muestra 'Invitado' si no hay nombre de usuario registrado
         } else {
-          // Si no hay nombre de usuario, redirige al login inmediatamente
+          // Si no hay tokens, redirige al login inmediatamente
           router.replace('/screens/login');
         }
       } catch (error) {
@@ -59,7 +61,7 @@ export function UserLogic() {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+    const data = await response.json();
 
       if (response.ok) {
         setMessage(data.mensaje || 'Acción completada con éxito.');
@@ -110,7 +112,7 @@ export function UserLogic() {
     handleFetch('/users/reactivar', 'POST', { nombre: formData.nombre, contrasena: formData.contrasena });
   };
 
-  // La función de logout mejorada
+  // FIX PRINCIPAL: Función de logout mejorada para borrar tokens de usuario e invitado.
   const handleLogout = async () => {
     Alert.alert(
       "Cerrar Sesión",
@@ -124,14 +126,12 @@ export function UserLogic() {
           text: "Sí",
           onPress: async () => {
             try {
-              // Limpiar los tokens de autenticación
+              // Limpiar los tokens de autenticación (usuario y invitado)
               await AsyncStorage.removeItem('access_token');
               await AsyncStorage.removeItem('nombre_usuario');
-              
-              // Opcional: mostrar un mensaje de éxito
-              Alert.alert('¡Hasta pronto!', 'Has cerrado sesión con éxito.');
-              
-              // Redirigir al usuario a la pantalla de login. 'replace' es clave.
+              await AsyncStorage.removeItem('guest_token'); // <--- FIX APLICADO
+
+              // Redirigir al usuario a la pantalla de login.
               router.replace('/screens/login');
             } catch (error) {
               console.error("Error al cerrar sesión", error);
@@ -142,6 +142,10 @@ export function UserLogic() {
       ],
       { cancelable: false }
     );
+  };
+
+  const handleOpenMenu = () => {
+    bottomSheetRef.current?.expand();
   };
 
   return {
@@ -158,5 +162,7 @@ export function UserLogic() {
     handleLogout,
     message,
     isLoading,
+    bottomSheetRef,
+    handleOpenMenu,
   };
 }

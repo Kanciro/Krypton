@@ -6,6 +6,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#000042',
     alignItems: 'center',
   },
+  title: {
+    fontSize: 24,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginVertical: 20,
+  },
   listContent: {
     paddingHorizontal: 10,
     paddingBottom: 20, // Espacio al final de la lista

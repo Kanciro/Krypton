@@ -8,7 +8,9 @@ import json
 from fastapi.middleware.cors import CORSMiddleware
 # Tus imports existentes
 from servicio_datos_cripto.services.crypto_data_service import traerTopCriptomonedas, traerCriptomonedas
-from servicio_usuarios.schemas.schema_criptomonedas import CriptomonedaSchema  
+from servicio_usuarios.schemas.schema_criptomonedas import CriptomonedaSchema 
+from servicio_usuarios.schemas.schema_alerta import AlertaCreateSchema, AlertaResponseSchema
+from servicio_alertas_personalizadas.services.services_alert import crear_alerta_personalizada
 from servicio_datos_cripto.services.crypto_data_id_service import ObtenerValorPorSimbolo
 from servicio_datos_cripto.services.fiat_data_id_services import ObtenerValorFiatPorSimbolo
 # Importa la función actualizada
@@ -217,19 +219,19 @@ async def leer_datos_historicos(
 @app.get("/api/v1/cryptocurrencies/{crypto_id}/historical-data")
 async def leer_y_guardar_datos_historicos(
     crypto_id: str,
-    monedas_fiat: List[str] = Query(..., description="Lista de c\u00f3digos de monedas fiat (ej. usd, eur, cop)", example=["usd", "eur"]),
-    dias: int = Query(30, ge=1, description="N\u00famero de d\u00edas hist\u00f3ricos a obtener", example=30),
+    monedas_fiat: List[str] = Query(..., description="Lista de códigos de monedas fiat (ej. usd, eur, cop)", example=["usd", "eur"]),
+    dias: int = Query(30, ge=1, description="Numero de d\u00edas históricos a obtener", example=30),
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene los datos hist\u00f3ricos de una criptomoneda y los guarda en la base de datos.
+    Obtiene los datos historicos de una criptomoneda y los guarda en la base de datos.
     """
     datos = await obtener_valores_historicos_por_cripto_y_fiats(crypto_id, monedas_fiat, dias)
     
     if not datos or not datos.get(crypto_id):
         raise HTTPException(
             status_code=500,
-            detail=f"No se pudieron obtener los datos hist\u00f3ricos para {crypto_id}.",
+            detail=f"No se pudieron obtener los datos históricos para {crypto_id}.",
         )
     
     guardado_exitoso = guardar_valores_fiat_en_db(db, crypto_id, datos)
@@ -492,6 +494,30 @@ def LeerValorHistorico(crypto_id: str, days: int):
         raise HTTPException(status_code=500, detail="Error al cargar los datos históricos.")
     return result
 """
+@app.post(
+    "/crear", 
+    response_model=AlertaResponseSchema, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Crea una nueva alerta de precio para el usuario autenticado."
+)
+def crear_alerta(
+    alerta_data: AlertaCreateSchema,
+    db: Session = Depends(get_db),
+    # Esta dependencia inyecta el objeto de usuario y verifica el token JWT
+    usuario_actual: Usuario = Depends(get_current_user) 
+):
+    """
+    Recibe la información de la alerta (cripto, moneda, dirección y valor objetivo) 
+    y la guarda en la base de datos asociada al usuario logueado.
+    """
+    
+    alerta_creada = crear_alerta_personalizada(
+        db=db, 
+        alerta_data=alerta_data, 
+        usuario=usuario_actual
+    )
+    
+    return alerta_creada
 
 
 @app.get("/api/v1/cryptocurrencies/history/{crypto_id_api}/db")

@@ -95,9 +95,6 @@ def fetch_and_insert_news(db: Session, lang: str = 'ES'):
             fuente_obj = get_or_create_fuente(db, source_name)
             categoria_obj = get_or_create_categoria(db, categoria_name)
             
-            # --- ¡Lógica clave! ---
-            # Encontrar el ID de la criptomoneda a partir del título de la noticia
-            crypto_id = find_crypto_id_by_title(db, titulo)
             
             # Crear e insertar la nueva noticia
             new_news = Noticia(
@@ -108,7 +105,6 @@ def fetch_and_insert_news(db: Session, lang: str = 'ES'):
                 fecha_creacion=datetime.utcnow(),
                 id_fuente=fuente_obj.id_fuente,
                 id_categoria=categoria_obj.id_categoria,
-                id_cripto=crypto_id 
             )
             
             db.add(new_news)

@@ -1,7 +1,7 @@
 # main.py
 
 from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query, Path, Request, status
-from typing import List, Optional
+from typing import List, Optional, Dict
 import asyncio
 import logging
 import json
@@ -16,7 +16,7 @@ from servicio_datos_cripto.services.fiat_data_id_services import ObtenerValorFia
 # Importa la función actualizada
 from servicio_datos_cripto.services.crypto_sync_service import actualizar_criptomonedas_en_db
 from servicio_datos_cripto.services.fiat_data_service import traerMonedasFiat 
-from servicio_datos_cripto.services.valor_fiat_data_service import obtener_valores_historicos_por_cripto_y_fiats
+from servicio_datos_cripto.services.valor_fiat_data_service import obtener_precio_actual_por_cripto_y_fiats
 from servicio_usuarios.services.user_data_services import RegistrarUsuario, hashContraseña
 from servicio_usuarios.schemas.schema_valor_fiat import ValorFiatSchema
 from servicio_usuarios.schemas.schema_users import (
@@ -30,7 +30,7 @@ from jose import jwt, JWTError
 from servicio_usuarios.services.auth.auth_utils import get_current_user
 from servicio_usuarios.services.email_services.email_sender import send_verification_email, send_registration_email_with_code
 from servicio_usuarios.schemas.schema_guest import InvitadoResponse
-from servicio_datos_cripto.services.valor_fiat_sync_service import guardar_valores_fiat_en_db
+from servicio_datos_cripto.services.valor_fiat_sync_service import obtener_precio_actual_y_guardar_en_db, obtener_valor_actual_fiat_desde_db
 import random
 import string
 from servicio_usuarios.services.user_enquiry_services import registrarConsultaUsuario
@@ -216,30 +216,44 @@ async def leer_datos_historicos(
 
 """
 
-@app.get("/api/v1/cryptocurrencies/{crypto_id}/historical-data")
-async def leer_y_guardar_datos_historicos(
-    crypto_id: str,
-    monedas_fiat: List[str] = Query(..., description="Lista de códigos de monedas fiat (ej. usd, eur, cop)", example=["usd", "eur"]),
-    dias: int = Query(30, ge=1, description="Numero de d\u00edas históricos a obtener", example=30),
+@app.get("/precio_actual", response_model=Dict[str, Dict[str, float]], summary="Obtener el precio actual de una Crypto en múltiples Fiats")
+async def get_precio_actual(
+    crypto_id: str = Query(..., description="ID de la criptomoneda (ej: 'bitcoin', 'ethereum'). Debe estar en la lista predefinida."),
+    monedas_fiat: List[str] = Query(..., description="Lista de códigos de monedas fiat separadas por comas (ej: 'usd,eur,jpy').")
+):
+    # Llamamos a la función de servicio que contiene la lógica
+    return obtener_precio_actual_por_cripto_y_fiats(crypto_id, monedas_fiat)
+
+
+@app.get("/cripto/valor-actual-db", status_code=200)
+def obtener_valor_actual_db(
+    crypto_id: str = Query(..., description="ID de la criptomoneda (ej. 'bitcoin')"),
+    monedas_fiat: List[str] = Query(["usd"], description="Lista de códigos de monedas fiat (ej. ['usd', 'eur'])"),
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene los datos historicos de una criptomoneda y los guarda en la base de datos.
+    Obtiene el valor ACTUAL (más reciente) de una criptomoneda en relación a las monedas fiat 
+    directamente desde la base de datos (DB).
     """
-    datos = await obtener_valores_historicos_por_cripto_y_fiats(crypto_id, monedas_fiat, dias)
-    
-    if not datos or not datos.get(crypto_id):
-        raise HTTPException(
-            status_code=500,
-            detail=f"No se pudieron obtener los datos históricos para {crypto_id}.",
+    try:
+        # Llama a la nueva función de servicio, que solo devuelve el registro más reciente
+        resultado = obtener_valor_actual_fiat_desde_db(
+            db, 
+            crypto_id.lower(), 
+            monedas_fiat
         )
-    
-    guardado_exitoso = guardar_valores_fiat_en_db(db, crypto_id, datos)
-    
-    return {"datos_api": datos, "estado_guardado": guardado_exitoso["mensaje"]}
-
-
-
+        
+        # Verificar si hay datos
+        if not resultado.get(crypto_id.lower()) or not any(resultado[crypto_id.lower()].values()):
+            raise HTTPException(status_code=404, detail="No se encontraron datos de precio actual para esta combinación en la DB.")
+            
+        return resultado
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error inesperado al consultar la DB: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 
 """
@@ -254,16 +268,45 @@ async def leerMonedasFiatConBD(db: Session = Depends(get_db)):
     return fiats
 """
 
-"""@app.get("/api/v1/cryptocurrencies/popular/valores_fiat")
-async def leerValoresFiat():
-    from servicio_datos_cripto.services.valor_fiat_data_service import traerValoresCripto
-    precios = traerValoresCripto()
+"""
+@app.get("/api/v1/cryptocurrencies/popular/valores_fiat")
+async def leerValoresFiat(
+    crypto_id: str = Query(..., description="ID o símbolo de la criptomoneda (ej. 'bitcoin' o 'btc')", example="bitcoin"),
+    monedas_fiat: List[str] = Query(..., description="Lista de códigos de monedas fiat (ej. ['usd','eur'])", example=["usd", "eur"]),
+    dias: int = Query(30, ge=1, description="Número de días históricos a obtener", example=30),
+):
+    from servicio_datos_cripto.services.valor_fiat_data_service import obtener_valores_historicos_por_cripto_y_fiats
+    precios = await obtener_valores_historicos_por_cripto_y_fiats(crypto_id, monedas_fiat, dias)
     if precios is None:
         raise HTTPException(
             status_code=500,
             detail="No se pudieron obtener los datos de los valores fiat.",
         )
-    return precios"""
+    return precios
+"""
+
+
+@app.post("/cripto/precio-actual/guardar", status_code=200)
+def guardar_precio_fiat_actual(
+    crypto_id: str = Query(..., description="ID de la criptomoneda (ej. 'bitcoin')"),
+    monedas_fiat: List[str] = Query(["usd"], description="Lista de códigos de monedas fiat (ej. ['usd', 'eur'])"),
+    # **Usa 'Depends(get_db)' para inyectar la sesión de la base de datos**
+    db: Session = Depends(get_db)
+):
+
+    try:
+        # Llama a la función que maneja la lógica de negocio y DB
+        resultado = obtener_precio_actual_y_guardar_en_db(db, crypto_id.lower(), monedas_fiat)
+        return resultado
+        
+    except HTTPException as e:
+        # Re-lanza la excepción HTTP generada dentro del servicio
+        raise e
+    except Exception as e:
+        logger.error(f"Error inesperado en el endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
+
+
 
 @app.post("/users/login", response_model=TokenSchema)
 def Login(credenciales: LoginSchema, db: Session = Depends(get_db)):
@@ -593,18 +636,11 @@ def registrar_consulta(
 
 
 @app.get("/fetch_and_insert_news")
-def trigger_news_update(db: Session = Depends(get_db)):
+def Traer_e_insertar_Noticias(db: Session = Depends(get_db)):
     """
     Endpoint que obtiene noticias de criptomonedas y las guarda en la base de datos.
-    
-    Este endpoint se encarga de:
-    1. Conectar con la API de CryptoCompare.
-    2. Procesar las noticias obtenidas.
-    3. Insertar las noticias nuevas en la base de datos.
     """
     try:
-        # Llamar a la función que ya creamos.
-        # Le pasamos la sesión de la base de datos y el idioma.
         fetch_and_insert_news(db=db, lang='ES') 
         return {"message": "Las noticias se han actualizado correctamente."}
     except Exception as e:

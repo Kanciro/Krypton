@@ -63,7 +63,7 @@ const ConversionScreen = () => {
                                                 key={option.id_cripto}
                                                 label={option.simbolo} // BTC, ETH
                                                 value={option.id_api}  // bitcoin, ethereum
-                                                color="#ffffff"
+                                                color="#000000ff"
                                             />
                                         ))}
                                     </Picker>
@@ -102,7 +102,7 @@ const ConversionScreen = () => {
                                                 key={option.id_moneda}
                                                 label={option.coi.toUpperCase()} // USD, EUR
                                                 value={option.coi}               // usd, eur
-                                                color="#ffffff"
+                                                color="#000000ff"
                                             />
                                         ))}
                                     </Picker>

@@ -1,11 +1,11 @@
 import React from 'react';
-import { Text, View, ScrollView, TextInput, Alert } from 'react-native';
+import { Text, View, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import Header from '../_components/header';
 import MenuModal from '../_components/MenuModal';
 import styles from '../_styles/ConversionStyles';
-import useCryptoConversion, { CRYPTOS, FIATS } from '../_services/ConversionLogic';
+import useCryptoConversion from '../_services/ConversionLogic'; 
 
 
 const ConversionScreen = () => {
@@ -14,12 +14,17 @@ const ConversionScreen = () => {
         fiatValue,
         selectedCrypto,
         selectedFiat,
+        conversionRate, // Tasa para mostrar, si se desea
+        cryptoOptions, // Nueva lista de opciones
+        fiatOptions,   // Nueva lista de opciones
+        isLoading,     // Indicador de carga
         handleCryptoChange,
         handleFiatChange,
-        setSelectedCrypto,
-        setSelectedFiat,
+        setSelectedCrypto, // Ahora toma el id_api
+        setSelectedFiat,   // Ahora toma el coi
     } = useCryptoConversion();
 
+// Opciones del menú
     const menuOptions = [
         { label: 'Gestionar Usuario', action: () => router.push('/screens/user') },
         { label: 'Noticias', action: () => router.push('/screens/news') },
@@ -33,68 +38,86 @@ const ConversionScreen = () => {
             <Header />
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <Text style={styles.title}>Conversión de Monedas</Text>
-                
-                {/* Bloque de Criptomoneda */}
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Criptomoneda</Text>
-                    <View style={styles.inputRow}>
-                        <View style={styles.currencySelector}>
-                            <Picker
-                                selectedValue={selectedCrypto}
-                                style={styles.pickerStyle}
-                                onValueChange={(itemValue) => setSelectedCrypto(itemValue)}
-                                dropdownIconColor="#00ffff"
-                            >
-                                {CRYPTOS.map((option) => (
-                                    <Picker.Item
-                                        key={option}
-                                        label={option}
-                                        value={option}
-                                        color="#ffffff"
-                                    />
-                                ))}
-                            </Picker>
-                        </View>
-                        <TextInput
-                            style={styles.input}
-                            value={cryptoValue}
-                            onChangeText={handleCryptoChange}
-                            keyboardType="numeric"
-                            placeholder="0.0"
-                        />
-                    </View>
-                </View>
-                {/* Bloque de Moneda Fiat */}
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Moneda Fiat</Text>
-                    <View style={styles.inputRow}>
-                        <View style={styles.currencySelector}>
-                            <Picker
-                                selectedValue={selectedFiat}
-                                style={styles.pickerStyle}
-                                onValueChange={(itemValue) => setSelectedFiat(itemValue)}
-                                dropdownIconColor="#00ffff"
-                            >
-                                {FIATS.map((option) => (
-                                    <Picker.Item
-                                        key={option}
-                                        label={option}
-                                        value={option}
-                                        color="#ffffff"
-                                    />
-                                ))}
-                            </Picker>
-                        </View>
-                        <TextInput
-                            style={styles.input}
-                            value={fiatValue}
-                            onChangeText={handleFiatChange}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                        />
-                    </View>
-                </View>
 
+                {/* Mostrar indicador de carga */}
+                {isLoading ? (
+                    <ActivityIndicator size="large" color="#00ffff" style={{ marginTop: 50 }} />
+                ) : (
+                    <>
+                        {/* Bloque de Criptomoneda */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Criptomoneda</Text>
+                            <View style={styles.inputRow}>
+                                <View style={styles.currencySelector}>
+                                    <Picker
+                                        // selectedValue ahora usa el símbolo para coincidir con la UI
+                                        selectedValue={selectedCrypto}
+                                        style={styles.pickerStyle}
+                                        // onValueChange recibe el 'id_api' y lo pasa a setSelectedCrypto
+                                        onValueChange={(itemValue) => setSelectedCrypto(itemValue)} 
+                                        dropdownIconColor="#00ffff"
+                                    >
+                                        {/* Mapea sobre cryptoOptions, usando 'id_api' como valor y 'simbolo' como etiqueta */}
+                                        {cryptoOptions.map((option) => (
+                                            <Picker.Item
+                                                key={option.id_cripto}
+                                                label={option.simbolo} // BTC, ETH
+                                                value={option.id_api}  // bitcoin, ethereum
+                                                color="#ffffff"
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
+                                <TextInput
+                                    style={styles.input}
+                                    value={cryptoValue}
+                                    onChangeText={handleCryptoChange}
+                                    keyboardType="numeric"
+                                    placeholder="0.0"
+                                />
+                            </View>
+                        </View>
+                        
+                        {/* Muestra la Tasa de Conversión Actual (Opcional, pero útil) */}
+                        <Text style={styles.rateText}>
+                            Tasa: 1 {selectedCrypto} = {conversionRate.toFixed(2)} {selectedFiat}
+                        </Text>
+                        
+                        {/* Bloque de Moneda Fiat */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Moneda Fiat</Text>
+                            <View style={styles.inputRow}>
+                                <View style={styles.currencySelector}>
+                                    <Picker
+                                        // selectedValue ahora usa el símbolo (coi.toUpperCase())
+                                        selectedValue={selectedFiat}
+                                        style={styles.pickerStyle}
+                                        // onValueChange recibe el 'coi' en minúsculas y lo pasa a setSelectedFiat
+                                        onValueChange={(itemValue) => setSelectedFiat(itemValue)}
+                                        dropdownIconColor="#00ffff"
+                                    >
+                                        {/* Mapea sobre fiatOptions, usando 'coi' como valor y 'coi.toUpperCase()' como etiqueta */}
+                                        {fiatOptions.map((option) => (
+                                            <Picker.Item
+                                                key={option.id_moneda}
+                                                label={option.coi.toUpperCase()} // USD, EUR
+                                                value={option.coi}               // usd, eur
+                                                color="#ffffff"
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
+                                <TextInput
+                                    style={styles.input}
+                                    value={fiatValue}
+                                    onChangeText={handleFiatChange}
+                                    keyboardType="numeric"
+                                    placeholder="0.00"
+                                />
+                            </View>
+                        </View>
+                    </>
+                )}
             </ScrollView>
             <MenuModal options={menuOptions} />
         </View>

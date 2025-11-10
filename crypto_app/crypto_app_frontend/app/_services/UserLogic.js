@@ -46,7 +46,7 @@ export function UserLogic() {
     setFormData({ ...formData, [name]: value });
   };
 
-  // Función genérica para manejar todas las llamadas a la API
+  // Función para manejar todas las llamadas a la API
   const handleFetch = async (endpoint, method, body) => {
     setIsLoading(true);
     setMessage('Procesando...');
@@ -129,7 +129,7 @@ export function UserLogic() {
               // Limpiar los tokens de autenticación (usuario y invitado)
               await AsyncStorage.removeItem('access_token');
               await AsyncStorage.removeItem('nombre_usuario');
-              await AsyncStorage.removeItem('guest_token'); // <--- FIX APLICADO
+              await AsyncStorage.removeItem('guest_token'); // <--- FIX INVITADO
 
               // Redirigir al usuario a la pantalla de login.
               router.replace('/screens/login');

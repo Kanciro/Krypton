@@ -12,7 +12,7 @@ def LeerValorHistorico(crypto_id_api: str, days: int):
     params = {
         "vs_currency": "usd",
         "days": days,
-        "precision": 8  # Opcional: precisión de los precios a dos decimales
+        "precision": 5  
     }
     
     try:

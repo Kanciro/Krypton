@@ -1,34 +1,104 @@
 import { useState, useEffect } from 'react';
+import Constants from 'expo-constants';
 
-const MOCK_RATES = {
-    'BTC': { 'USD': 62000.00, 'EUR': 58000.00 },
-    'ETH': { 'USD': 3500.00, 'EUR': 3300.00 }
+const API_URL = Constants.expoConfig.extra.API_URL;
+const INITIAL_CRYPTO_LIST = [];
+const INITIAL_FIAT_LIST = [];
+
+// Función para obtener los datos de la API
+const fetchApiData = async (endpoint) => {
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        return null;
+    }
 };
-
-export const CRYPTOS = ['BTC', 'ETH'];
-export const FIATS = ['USD', 'EUR'];
 
 const useCryptoConversion = () => {
     const [cryptoValue, setCryptoValue] = useState('');
     const [fiatValue, setFiatValue] = useState('');
-    const [selectedCrypto, setSelectedCrypto] = useState(CRYPTOS[0]);
-    const [selectedFiat, setSelectedFiat] = useState(FIATS[0]);
-    const [conversionRate, setConversionRate] = useState(MOCK_RATES[CRYPTOS[0]][FIATS[0]]);
+    
+    // Estado para las listas de monedas
+    const [cryptoOptions, setCryptoOptions] = useState(INITIAL_CRYPTO_LIST);
+    const [fiatOptions, setFiatOptions] = useState(INITIAL_FIAT_LIST);
 
-    // 1. Efecto para actualizar la tasa de conversión al cambiar las monedas
-    // y recalcular el valor opuesto.
+    // Estado para las monedas seleccionadas (almacenan el 'id_api' y 'coi')
+    const [selectedCryptoId, setSelectedCryptoId] = useState(''); // ej: 'bitcoin'
+    const [selectedFiatId, setSelectedFiatId] = useState('');       // ej: 'usd'
+    
+    // Almacenamos el símbolo/coi para mostrar en el componente (ej: 'BTC', 'USD')
+    const [selectedCryptoSymbol, setSelectedCryptoSymbol] = useState('');
+    const [selectedFiatSymbol, setSelectedFiatSymbol] = useState('');
+
+    const [conversionRate, setConversionRate] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // --- 1. Efecto inicial para cargar listas de cryptos y fiats ---
     useEffect(() => {
-        const rate = MOCK_RATES[selectedCrypto]?.[selectedFiat] || 0;
-        setConversionRate(rate);
+        const loadInitialData = async () => {
+            setIsLoading(true);
+            
+            const [cryptos, fiats] = await Promise.all([
+                fetchApiData('/cryptos/todas'),
+                fetchApiData('/fiat/all')
+            ]);
 
-        // Recalcular el valor opuesto manteniendo el valor ya escrito
-        if (cryptoValue) {
-            handleCryptoChange(cryptoValue, rate);
-        } else if (fiatValue) {
-            handleFiatChange(fiatValue, rate);
+            if (cryptos && cryptos.length > 0 && fiats && fiats.length > 0) {
+                setCryptoOptions(cryptos);
+                setFiatOptions(fiats);
+                
+                // Establecer las selecciones iniciales (primer elemento de cada lista)
+                setSelectedCryptoId(cryptos[0].id_api);
+                setSelectedCryptoSymbol(cryptos[0].simbolo);
+                setSelectedFiatId(fiats[0].coi);
+                setSelectedFiatSymbol(fiats[0].coi.toUpperCase());
+            } else {
+                console.warn("No se pudieron cargar las listas de monedas.");
+            }
+            setIsLoading(false);
+        };
+
+        loadInitialData();
+    }, []);
+
+    // --- 2. Efecto para actualizar la tasa de conversión al cambiar las monedas ---
+    useEffect(() => {
+        // Ejecutar solo si ya se seleccionaron las monedas
+        if (selectedCryptoId && selectedFiatId) {
+            const fetchRate = async () => {
+                const endpoint = `/cripto/valor-actual-db?crypto_id=${selectedCryptoId}&monedas_fiat=${selectedFiatId}`;
+                const data = await fetchApiData(endpoint);
+                
+                let rate = 0;
+                
+                // Extraer la tasa del objeto de respuesta anidado
+                if (data) {
+                    const cryptoKey = Object.keys(data)[0]; // 'bitcoin'
+                    const fiatKey = Object.keys(data[cryptoKey])[0]; // 'usd'
+                    rate = data[cryptoKey]?.[fiatKey]?.valor || 0;
+                }
+
+                setConversionRate(rate);
+
+                // Recalcular el valor opuesto manteniendo el valor ya escrito
+                if (cryptoValue) {
+                    handleCryptoChange(cryptoValue, rate);
+                } else if (fiatValue) {
+                    handleFiatChange(fiatValue, rate);
+                }
+            };
+
+            fetchRate();
         }
-    }, [selectedCrypto, selectedFiat]);
+    }, [selectedCryptoId, selectedFiatId]); // Depende de los IDs de las monedas seleccionadas
 
+    // --- Funciones de Manejo de Cambio de Valores ---
+    
     // Función de limpieza de valor y conversión de Crypto a Fiat
     const handleCryptoChange = (value, currentRate = conversionRate) => {
         const cleanedValue = value.replace(/[^0-9.]/g, '');
@@ -59,17 +129,37 @@ const useCryptoConversion = () => {
         }
     };
 
+    // --- Funciones para cambiar las monedas ---
+    const handleSelectCrypto = (id_api) => {
+        const newCrypto = cryptoOptions.find(c => c.id_api === id_api);
+        if (newCrypto) {
+            setSelectedCryptoId(id_api);
+            setSelectedCryptoSymbol(newCrypto.simbolo);
+        }
+    };
+
+    const handleSelectFiat = (coi) => {
+        const newFiat = fiatOptions.find(f => f.coi === coi);
+        if (newFiat) {
+            setSelectedFiatId(coi);
+            setSelectedFiatSymbol(coi.toUpperCase());
+        }
+    };
+
     // Retorna todo el estado y las funciones que el componente necesita
     return {
         cryptoValue,
         fiatValue,
-        selectedCrypto,
-        selectedFiat,
+        selectedCrypto: selectedCryptoSymbol, 
+        selectedFiat: selectedFiatSymbol,
         conversionRate,
+        cryptoOptions,
+        fiatOptions,   
+        isLoading,
         handleCryptoChange,
         handleFiatChange,
-        setSelectedCrypto,
-        setSelectedFiat,
+        setSelectedCrypto: handleSelectCrypto,
+        setSelectedFiat: handleSelectFiat,
     };
 };
 
